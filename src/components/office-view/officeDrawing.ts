@@ -4,6 +4,7 @@ import { Graphics, Text, TextStyle, Container } from "pixi.js";
 const DESK_W = 72;
 const DESK_H = 38;
 const AGENT_RADIUS = 20;
+const CEO_RADIUS = 28;
 
 const AGENT_COLORS: Record<string, number> = {
   hivemind: 0x3b82f6,
@@ -36,7 +37,7 @@ function blend(from: number, to: number, t: number): number {
     Math.round(fb + (tb - fb) * c);
 }
 
-// === Desk Drawing (claw-empire quality) ===
+// === Desk Drawing ===
 export function drawDesk(x: number, y: number): Container {
   const c = new Container();
   c.position.set(x, y);
@@ -84,22 +85,19 @@ export function drawDesk(x: number, y: number): Container {
 
   // Monitor
   const mon = new Graphics();
-  // Monitor stand
   mon.rect(DESK_W / 2 - 3, 3, 6, 3);
   mon.fill(0x27272a);
   mon.rect(DESK_W / 2 - 8, 1, 16, 3);
   mon.fill(0x27272a);
-  // Screen frame
   mon.roundRect(DESK_W / 2 - 20, -18, 40, 20, 2);
   mon.fill(0x1c1c1e);
   mon.stroke({ color: 0x333336, width: 1 });
-  // Screen (labeled "screen" for ticker animation)
   mon.roundRect(DESK_W / 2 - 17, -15, 34, 14, 1);
   mon.fill({ color: 0x1a2a40, alpha: 0.9 });
   mon.label = "monitor-screen";
   c.addChild(mon);
 
-  // Monitor glow (ambient light on desk surface)
+  // Monitor glow
   const glow = new Graphics();
   glow.ellipse(DESK_W / 2, 2, 22, 6);
   glow.fill({ color: 0x3b82f6, alpha: 0.04 });
@@ -111,14 +109,12 @@ export function drawDesk(x: number, y: number): Container {
   kb.roundRect(DESK_W / 2 - 16, 8, 32, 10, 1.5);
   kb.fill(0x27272a);
   kb.stroke({ color: 0x3f3f46, width: 0.5 });
-  // Key rows
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 8; col++) {
       kb.roundRect(DESK_W / 2 - 14 + col * 3.7, 9.5 + row * 2.8, 2.8, 2, 0.3);
       kb.fill({ color: 0x3a3a3e, alpha: 0.6 });
     }
   }
-  // Spacebar
   kb.roundRect(DESK_W / 2 - 8, 9.5 + 3 * 2.8, 16, 2, 0.5);
   kb.fill({ color: 0x3a3a3e, alpha: 0.5 });
   c.addChild(kb);
@@ -126,17 +122,13 @@ export function drawDesk(x: number, y: number): Container {
   // Coffee mug
   const mug = new Graphics();
   const mx = DESK_W - 14, my = DESK_H - 14;
-  // Mug body
   mug.roundRect(mx - 5, my - 6, 10, 10, 2);
   mug.fill(0x44403c);
   mug.stroke({ color: 0x57534e, width: 0.8 });
-  // Handle
   mug.arc(mx + 5, my - 1, 4, -1.2, 1.2);
   mug.stroke({ width: 1, color: 0x57534e });
-  // Liquid
   mug.ellipse(mx, my - 4, 3.5, 1.5);
   mug.fill({ color: 0x7c5a3a, alpha: 0.7 });
-  // Rim highlight
   mug.ellipse(mx, my - 6, 4, 1.2);
   mug.stroke({ width: 0.4, color: 0x6b6560, alpha: 0.5 });
   mug.label = "coffee-mug";
@@ -150,7 +142,6 @@ export function drawDesk(x: number, y: number): Container {
     papers.roundRect(px + ox, py + oy, 14, 10, 0.5);
     papers.fill(blend(0x2a2a2e, 0x333338, i / 2));
     papers.stroke({ color: 0x3f3f46, width: 0.3 });
-    // Text lines
     for (let l = 0; l < 3; l++) {
       papers.moveTo(px + ox + 2, py + oy + 2.5 + l * 2.5);
       papers.lineTo(px + ox + 10 - l * 1.5, py + oy + 2.5 + l * 2.5);
@@ -165,7 +156,6 @@ export function drawDesk(x: number, y: number): Container {
   ph.roundRect(phx - 4, phy, 8, 10, 1);
   ph.fill(0x3a3530);
   ph.stroke({ color: 0x4a443e, width: 0.5 });
-  // Pencils
   ph.moveTo(phx - 2, phy);
   ph.lineTo(phx - 3, phy - 6);
   ph.stroke({ width: 1, color: 0xeab308, alpha: 0.7 });
@@ -186,18 +176,14 @@ export function drawChair(x: number, y: number, accentColor: number): Container 
   c.position.set(x, y);
 
   const g = new Graphics();
-  // Chair base shadow
   g.ellipse(0, 8, 10, 3);
   g.fill({ color: 0x000000, alpha: 0.1 });
-  // Seat
   g.ellipse(0, 0, 10, 5);
   g.fill(blend(accentColor, 0x000000, 0.3));
   g.stroke({ color: blend(accentColor, 0x000000, 0.1), width: 0.5 });
-  // Back rest
   g.roundRect(-8, -12, 16, 10, 3);
   g.fill(blend(accentColor, 0x000000, 0.2));
   g.stroke({ color: blend(accentColor, 0xffffff, 0.1), width: 0.3 });
-  // Highlight
   g.roundRect(-5, -10, 10, 4, 1.5);
   g.fill({ color: blend(accentColor, 0xffffff, 0.2), alpha: 0.15 });
   c.addChild(g);
@@ -237,12 +223,9 @@ export function drawAgent(
   const body = new Graphics();
   body.circle(0, 0, AGENT_RADIUS);
   body.fill(color);
-  // Inner gradient highlight
   body.circle(-4, -5, AGENT_RADIUS * 0.6);
   body.fill({ color: 0xffffff, alpha: 0.08 });
-  if (status === "offline") {
-    body.alpha = 0.35;
-  }
+  if (status === "offline") body.alpha = 0.35;
   c.addChild(body);
 
   // Ring
@@ -305,20 +288,19 @@ export function drawRoom(
   tint: number
 ): Container {
   const c = new Container();
+  c.label = "department-room";
 
-  // Base dark panel — gives rooms a distinct background against the canvas
   const base = new Graphics();
   base.roundRect(0, 0, w, h, 8);
   base.fill({ color: 0x111116, alpha: 0.92 });
   c.addChild(base);
 
-  // Tinted floor overlay
   const floor = new Graphics();
   floor.roundRect(0, 0, w, h, 8);
   floor.fill({ color: tint, alpha: 0.06 });
   c.addChild(floor);
 
-  // Floor tiles (checkerboard, subtle)
+  // Floor tiles
   const tileSize = 24;
   const tiles = new Graphics();
   for (let ty = 32; ty < h - 4; ty += tileSize) {
@@ -334,19 +316,20 @@ export function drawRoom(
   }
   c.addChild(tiles);
 
-  // Room border — more visible accent stroke
+  // Room border
   const border = new Graphics();
   border.roundRect(0, 0, w, h, 8);
   border.stroke({ color: tint, width: 1.5, alpha: 0.35 });
+  border.label = "room-border";
   c.addChild(border);
 
-  // Top accent line (color bar at very top)
+  // Top accent bar
   const topBar = new Graphics();
   topBar.roundRect(0, 0, w, 3, 8);
   topBar.fill({ color: tint, alpha: 0.7 });
   c.addChild(topBar);
 
-  // Wall header with gradient
+  // Wall header gradient
   const wallH = 36;
   const wall = new Graphics();
   const bands = 16;
@@ -372,7 +355,7 @@ export function drawRoom(
   label.position.set(12, 8);
   c.addChild(label);
 
-  // Windows on wall
+  // Windows
   const windowCount = Math.min(Math.floor(w / 60), 3);
   const windowW = 18, windowH = 12;
   const windowStartX = w - windowCount * 28 - 8;
@@ -380,28 +363,19 @@ export function drawRoom(
     const wx = windowStartX + i * 28;
     const wy = 8;
     const win = new Graphics();
-    // Frame
     win.roundRect(wx, wy, windowW, windowH, 1.5);
     win.fill({ color: 0x1a2a40, alpha: 0.4 });
     win.stroke({ color: tint, width: 0.5, alpha: 0.2 });
-    // Panes
     win.moveTo(wx + windowW / 2, wy);
     win.lineTo(wx + windowW / 2, wy + windowH);
     win.stroke({ width: 0.3, color: tint, alpha: 0.15 });
     win.moveTo(wx, wy + windowH / 2);
     win.lineTo(wx + windowW, wy + windowH / 2);
     win.stroke({ width: 0.3, color: tint, alpha: 0.15 });
-    // Sky reflection
     win.roundRect(wx + 2, wy + 1, windowW / 2 - 3, windowH / 2 - 2, 0.5);
     win.fill({ color: 0x60a5fa, alpha: 0.06 });
     c.addChild(win);
   }
-
-  // Ambient corner shadow (bottom-right)
-  const ambientShadow = new Graphics();
-  ambientShadow.roundRect(w - 30, h - 30, 30, 30, 6);
-  ambientShadow.fill({ color: 0x000000, alpha: 0.02 });
-  c.addChild(ambientShadow);
 
   return c;
 }
@@ -413,11 +387,9 @@ export function drawWallClock(x: number, y: number): Container {
   c.label = "wall-clock";
 
   const g = new Graphics();
-  // Clock face
   g.circle(0, 0, 8);
   g.fill({ color: 0x1c1c1e, alpha: 0.8 });
   g.stroke({ color: 0x3f3f46, width: 0.8 });
-  // Hour markers
   for (let i = 0; i < 12; i++) {
     const angle = (i * Math.PI * 2) / 12 - Math.PI / 2;
     const x1 = Math.cos(angle) * 5.5;
@@ -430,7 +402,6 @@ export function drawWallClock(x: number, y: number): Container {
   }
   c.addChild(g);
 
-  // Hands container (animated by ticker)
   const hands = new Graphics();
   hands.label = "clock-hands";
   c.addChild(hands);
@@ -438,4 +409,434 @@ export function drawWallClock(x: number, y: number): Container {
   return c;
 }
 
-export { DESK_W, DESK_H, AGENT_RADIUS };
+// === CEO Avatar ===
+export function drawCEO(x: number, y: number): Container {
+  const c = new Container();
+  c.position.set(x, y);
+  c.label = "ceo-avatar";
+
+  // Shadow
+  const shadow = new Graphics();
+  shadow.ellipse(0, CEO_RADIUS, CEO_RADIUS * 0.9, 5);
+  shadow.fill({ color: 0x000000, alpha: 0.2 });
+  c.addChild(shadow);
+
+  // Golden aura
+  const aura = new Graphics();
+  aura.circle(0, 0, CEO_RADIUS + 6);
+  aura.fill({ color: 0xf59e0b, alpha: 0.06 });
+  aura.label = "ceo-aura";
+  c.addChild(aura);
+
+  // Body
+  const body = new Graphics();
+  body.circle(0, 0, CEO_RADIUS);
+  body.fill(0xf59e0b);
+  body.circle(-5, -6, CEO_RADIUS * 0.5);
+  body.fill({ color: 0xffffff, alpha: 0.1 });
+  c.addChild(body);
+
+  // Ring
+  const ring = new Graphics();
+  ring.circle(0, 0, CEO_RADIUS);
+  ring.stroke({ color: 0xfbbf24, width: 2, alpha: 0.5 });
+  c.addChild(ring);
+
+  // "J" initial
+  const initial = new Text({
+    text: "J",
+    style: new TextStyle({
+      fontFamily: "Inter, system-ui, sans-serif",
+      fontSize: 24,
+      fontWeight: "bold",
+      fill: 0xffffff,
+    }),
+  });
+  initial.anchor.set(0.5);
+  c.addChild(initial);
+
+  // Crown
+  const crown = drawCrown();
+  crown.position.set(0, -CEO_RADIUS - 10);
+  crown.label = "ceo-crown";
+  c.addChild(crown);
+
+  // Name
+  const label = new Text({
+    text: "Jash (CEO)",
+    style: new TextStyle({
+      fontFamily: "Inter, system-ui, sans-serif",
+      fontSize: 10,
+      fill: 0xfbbf24,
+      fontWeight: "600",
+    }),
+  });
+  label.anchor.set(0.5, 0);
+  label.position.set(0, CEO_RADIUS + 6);
+  c.addChild(label);
+
+  // Interactive
+  c.eventMode = "static";
+  c.cursor = "pointer";
+
+  return c;
+}
+
+// === Crown ===
+export function drawCrown(): Container {
+  const c = new Container();
+  const g = new Graphics();
+
+  // Crown shape — 3-point crown
+  g.moveTo(-10, 4);
+  g.lineTo(-10, -2);
+  g.lineTo(-6, 2);
+  g.lineTo(-2, -6);
+  g.lineTo(0, -2);
+  g.lineTo(2, -6);
+  g.lineTo(6, 2);
+  g.lineTo(10, -2);
+  g.lineTo(10, 4);
+  g.closePath();
+  g.fill(0xfbbf24);
+  g.stroke({ color: 0xf59e0b, width: 0.8 });
+
+  // Jewels
+  g.circle(-2, -4, 1.2);
+  g.fill(0xef4444);
+  g.circle(2, -4, 1.2);
+  g.fill(0x3b82f6);
+  g.circle(0, -1, 1);
+  g.fill(0x22c55e);
+
+  c.addChild(g);
+  return c;
+}
+
+// === Collaboration Table (CEO office) ===
+export function drawCollabTable(x: number, y: number): Container {
+  const c = new Container();
+  c.position.set(x, y);
+  c.label = "collab-table";
+
+  const g = new Graphics();
+  // Shadow
+  g.ellipse(0, 6, 80, 10);
+  g.fill({ color: 0x000000, alpha: 0.08 });
+  // Table surface
+  g.roundRect(-70, -18, 140, 36, 6);
+  g.fill(0x2a2520);
+  g.roundRect(-68, -16, 136, 32, 5);
+  g.fill(0x3d342c);
+  g.stroke({ color: 0x4a3f35, width: 0.5 });
+  // Wood grain
+  for (let i = 0; i < 5; i++) {
+    g.moveTo(-60, -12 + i * 7);
+    g.lineTo(60, -12 + i * 7);
+    g.stroke({ width: 0.2, color: 0x5a4d40, alpha: 0.2 });
+  }
+  c.addChild(g);
+
+  // 6 chairs around table
+  const chairPositions = [
+    { x: -50, y: -30 }, { x: 0, y: -30 }, { x: 50, y: -30 },
+    { x: -50, y: 30 }, { x: 0, y: 30 }, { x: 50, y: 30 },
+  ];
+  for (const pos of chairPositions) {
+    const chair = new Graphics();
+    chair.ellipse(pos.x, pos.y, 8, 4);
+    chair.fill({ color: 0x4a3f35, alpha: 0.6 });
+    chair.ellipse(pos.x, pos.y, 6, 3);
+    chair.fill({ color: 0x57534e, alpha: 0.4 });
+    c.addChild(chair);
+  }
+
+  return c;
+}
+
+// === Hallway ===
+export function drawHallway(w: number): Container {
+  const c = new Container();
+  c.label = "hallway";
+  const h = 32;
+
+  const g = new Graphics();
+  g.rect(0, 0, w, h);
+  g.fill(0x0e0e12);
+
+  // Tile pattern
+  const tileW = 32;
+  for (let tx = 0; tx < w; tx += tileW) {
+    const isEven = (Math.floor(tx / tileW) % 2) === 0;
+    g.rect(tx, 0, Math.min(tileW, w - tx), h);
+    g.fill({ color: isEven ? 0x141418 : 0x111115, alpha: 1 });
+  }
+
+  // Accent lines
+  g.moveTo(0, 0);
+  g.lineTo(w, 0);
+  g.stroke({ width: 1, color: 0x262626, alpha: 0.5 });
+  g.moveTo(0, h);
+  g.lineTo(w, h);
+  g.stroke({ width: 1, color: 0x262626, alpha: 0.5 });
+  c.addChild(g);
+
+  // Potted plants at edges
+  const plant1 = drawPlant(20, h / 2);
+  const plant2 = drawPlant(w - 20, h / 2);
+  c.addChild(plant1);
+  c.addChild(plant2);
+
+  return c;
+}
+
+// === Potted Plant ===
+export function drawPlant(x: number, y: number): Container {
+  const c = new Container();
+  c.position.set(x, y);
+
+  const g = new Graphics();
+  // Pot
+  g.roundRect(-6, 0, 12, 10, 2);
+  g.fill(0x78350f);
+  g.stroke({ color: 0x92400e, width: 0.5 });
+  // Soil
+  g.ellipse(0, 1, 5, 2);
+  g.fill(0x44403c);
+  // Leaves
+  g.ellipse(-4, -4, 5, 3);
+  g.fill({ color: 0x22c55e, alpha: 0.7 });
+  g.ellipse(3, -6, 4, 3);
+  g.fill({ color: 0x16a34a, alpha: 0.7 });
+  g.ellipse(0, -8, 3, 4);
+  g.fill({ color: 0x15803d, alpha: 0.6 });
+  c.addChild(g);
+
+  return c;
+}
+
+// === Break Room ===
+export function drawBreakRoom(w: number): Container {
+  const h = 160;
+  const c = new Container();
+  c.label = "break-room";
+
+  // Base
+  const base = new Graphics();
+  base.roundRect(0, 0, w, h, 8);
+  base.fill({ color: 0x111116, alpha: 0.92 });
+  c.addChild(base);
+
+  // Warm tint
+  const tint = new Graphics();
+  tint.roundRect(0, 0, w, h, 8);
+  tint.fill({ color: 0xf59e0b, alpha: 0.04 });
+  c.addChild(tint);
+
+  // Border
+  const border = new Graphics();
+  border.roundRect(0, 0, w, h, 8);
+  border.stroke({ color: 0xf59e0b, width: 1.5, alpha: 0.25 });
+  c.addChild(border);
+
+  // Top bar
+  const topBar = new Graphics();
+  topBar.roundRect(0, 0, w, 3, 8);
+  topBar.fill({ color: 0xf59e0b, alpha: 0.5 });
+  c.addChild(topBar);
+
+  // Label
+  const label = new Text({
+    text: "Break Room",
+    style: new TextStyle({
+      fontFamily: "Inter, system-ui, sans-serif",
+      fontSize: 11,
+      fontWeight: "600",
+      fill: blend(0xf59e0b, 0xffffff, 0.4),
+      letterSpacing: 0.5,
+    }),
+  });
+  label.position.set(12, 8);
+  c.addChild(label);
+
+  // Coffee machine
+  const coffee = drawCoffeeMachine(60, 50);
+  c.addChild(coffee);
+
+  // Bookshelf
+  const shelf = drawBookshelf(w - 80, 40);
+  c.addChild(shelf);
+
+  // Sofas/chairs
+  const sofaPositions = [
+    { x: w / 2 - 60, y: 100 },
+    { x: w / 2, y: 100 },
+    { x: w / 2 + 60, y: 100 },
+  ];
+  for (const pos of sofaPositions) {
+    const sofa = drawSofa(pos.x, pos.y);
+    c.addChild(sofa);
+  }
+
+  // Small coffee table
+  const table = new Graphics();
+  table.roundRect(w / 2 - 20, 120, 40, 20, 3);
+  table.fill(0x2a2520);
+  table.stroke({ color: 0x3d342c, width: 0.5 });
+  c.addChild(table);
+
+  return c;
+}
+
+// === Coffee Machine ===
+export function drawCoffeeMachine(x: number, y: number): Container {
+  const c = new Container();
+  c.position.set(x, y);
+  c.label = "coffee-machine";
+
+  const g = new Graphics();
+  // Body
+  g.roundRect(-15, -30, 30, 50, 4);
+  g.fill(0x27272a);
+  g.stroke({ color: 0x3f3f46, width: 1 });
+  // Top section
+  g.roundRect(-13, -28, 26, 18, 2);
+  g.fill(0x1c1c1e);
+  // Water tank
+  g.roundRect(-11, -26, 10, 14, 1);
+  g.fill({ color: 0x3b82f6, alpha: 0.15 });
+  g.stroke({ color: 0x3b82f6, width: 0.3, alpha: 0.3 });
+  // Indicator lights
+  g.circle(6, -22, 2);
+  g.fill(0x22c55e);
+  g.circle(6, -16, 2);
+  g.fill({ color: 0xeab308, alpha: 0.5 });
+  // Drip tray
+  g.roundRect(-10, 14, 20, 4, 1);
+  g.fill(0x1a1a1e);
+  g.stroke({ color: 0x333336, width: 0.5 });
+  // Cup slot
+  g.roundRect(-6, 4, 12, 10, 1);
+  g.fill(0x1a1a1e);
+  // Nozzle
+  g.rect(-2, -10, 4, 6);
+  g.fill(0x3f3f46);
+
+  // Steam particles spawn point label
+  g.label = "coffee-body";
+  c.addChild(g);
+
+  // "Coffee" label
+  const lbl = new Text({
+    text: "☕",
+    style: new TextStyle({ fontSize: 10 }),
+  });
+  lbl.anchor.set(0.5);
+  lbl.position.set(0, -36);
+  c.addChild(lbl);
+
+  return c;
+}
+
+// === Bookshelf ===
+export function drawBookshelf(x: number, y: number): Container {
+  const c = new Container();
+  c.position.set(x, y);
+
+  const g = new Graphics();
+  // Frame
+  g.roundRect(-25, -20, 50, 60, 3);
+  g.fill(0x2a2520);
+  g.stroke({ color: 0x3d342c, width: 1 });
+
+  // Shelves
+  for (let i = 0; i < 3; i++) {
+    const sy = -14 + i * 18;
+    g.rect(-23, sy, 46, 1);
+    g.fill(0x3d342c);
+
+    // Books on shelf
+    const bookColors = [0x3b82f6, 0xef4444, 0x22c55e, 0xf59e0b, 0xa855f7, 0x06b6d4];
+    let bx = -21;
+    for (let b = 0; b < 5; b++) {
+      const bw = 4 + Math.random() * 4;
+      const bh = 12 + Math.random() * 4;
+      g.roundRect(bx, sy - bh, bw, bh, 0.5);
+      g.fill({ color: bookColors[b % bookColors.length], alpha: 0.4 + Math.random() * 0.3 });
+      bx += bw + 1;
+      if (bx > 20) break;
+    }
+  }
+
+  // Trophy on top
+  g.roundRect(-4, -26, 8, 4, 1);
+  g.fill(0xfbbf24);
+  g.circle(0, -30, 3);
+  g.fill(0xfbbf24);
+  g.stroke({ color: 0xf59e0b, width: 0.5 });
+
+  c.addChild(g);
+  return c;
+}
+
+// === Sofa ===
+export function drawSofa(x: number, y: number): Container {
+  const c = new Container();
+  c.position.set(x, y);
+
+  const g = new Graphics();
+  // Base
+  g.roundRect(-18, -6, 36, 16, 4);
+  g.fill(0x1c1c1e);
+  g.stroke({ color: 0x27272a, width: 0.8 });
+  // Cushions
+  g.roundRect(-15, -4, 14, 10, 2);
+  g.fill({ color: 0x3b82f6, alpha: 0.15 });
+  g.roundRect(1, -4, 14, 10, 2);
+  g.fill({ color: 0x3b82f6, alpha: 0.12 });
+  // Back rest
+  g.roundRect(-18, -12, 36, 8, 3);
+  g.fill(0x1a1a1e);
+  g.stroke({ color: 0x27272a, width: 0.5 });
+
+  c.addChild(g);
+  return c;
+}
+
+// === Bed (for offline agents) ===
+export function drawBed(x: number, y: number): Container {
+  const c = new Container();
+  c.position.set(x, y);
+  c.label = "agent-bed";
+
+  const g = new Graphics();
+  // Mattress
+  g.roundRect(-16, -6, 32, 16, 3);
+  g.fill(0x1c1c1e);
+  g.stroke({ color: 0x27272a, width: 0.8 });
+  // Blanket
+  g.roundRect(-14, -2, 28, 12, 2);
+  g.fill({ color: 0x3b82f6, alpha: 0.12 });
+  // Pillow
+  g.ellipse(-8, -2, 6, 4);
+  g.fill(0x27272a);
+  g.stroke({ color: 0x333336, width: 0.3 });
+  // Zzz
+  const zzz = new Text({
+    text: "zzz",
+    style: new TextStyle({
+      fontFamily: "Inter, system-ui, sans-serif",
+      fontSize: 7,
+      fill: 0x71717a,
+      fontStyle: "italic",
+    }),
+  });
+  zzz.position.set(10, -12);
+  zzz.label = "zzz-text";
+  c.addChild(g);
+  c.addChild(zzz);
+
+  return c;
+}
+
+export { DESK_W, DESK_H, AGENT_RADIUS, CEO_RADIUS };

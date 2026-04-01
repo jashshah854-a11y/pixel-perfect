@@ -1,7 +1,7 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { useOfficePixiRuntime } from "./useOfficePixiRuntime";
 import { buildScene, getSceneHeight, type AgentSprite } from "./officeScene";
-import { animateAgents, resetTick, registerClock } from "./officeTicker";
+import { animateScene, resetTick, registerClock, keyState, setSceneRef, setParticleGraphics } from "./officeTicker";
 import { Graphics } from "pixi.js";
 
 interface Agent {
@@ -29,20 +29,27 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
   useEffect(() => {
     if (!app) return;
 
-    // Clear stage
     app.stage.removeChildren();
     resetTick();
 
     const width = app.screen.width;
-    const { root, agentSprites } = buildScene(agents, width);
-    app.stage.addChild(root);
-    spritesRef.current = agentSprites;
+    const scene = buildScene(agents, width);
+    app.stage.addChild(scene.root);
+    spritesRef.current = scene.agentSprites;
+
+    // Particle overlay
+    const particleLayer = new Graphics();
+    app.stage.addChild(particleLayer);
+    setParticleGraphics(particleLayer);
+
+    // Set scene ref for ticker
+    setSceneRef(scene);
 
     // Set canvas height
     const h = getSceneHeight() + 40;
     setCanvasHeight(h);
 
-    // Register wall clocks for animation
+    // Register wall clocks
     const findClocks = (container: import("pixi.js").Container) => {
       for (const child of container.children) {
         if (child.label === "wall-clock") {
@@ -58,10 +65,10 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
         }
       }
     };
-    findClocks(root);
+    findClocks(scene.root);
 
     // Wire click handlers
-    for (const sprite of agentSprites) {
+    for (const sprite of scene.agentSprites) {
       sprite.container.on("pointertap", (e) => {
         const bounds = (containerRef.current as HTMLDivElement).getBoundingClientRect();
         const sx = e.global.x + bounds.left;
@@ -74,18 +81,53 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
   // Animation ticker
   useEffect(() => {
     if (!app) return;
-    const tickFn = () => animateAgents(spritesRef.current);
+    const tickFn = () => animateScene(spritesRef.current);
     app.ticker.add(tickFn);
     return () => {
       app.ticker?.remove(tickFn);
     };
   }, [app]);
 
+  // Keyboard handlers for CEO movement
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    const key = e.key.toLowerCase();
+    if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) {
+      e.preventDefault();
+      keyState[key] = true;
+    }
+  }, []);
+
+  const handleKeyUp = useCallback((e: KeyboardEvent) => {
+    const key = e.key.toLowerCase();
+    keyState[key] = false;
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    // Make focusable
+    el.tabIndex = 0;
+    el.style.outline = "none";
+
+    el.addEventListener("keydown", handleKeyDown);
+    el.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      el.removeEventListener("keydown", handleKeyDown);
+      el.removeEventListener("keyup", handleKeyUp);
+      // Clear all keys
+      for (const k of Object.keys(keyState)) {
+        keyState[k] = false;
+      }
+    };
+  }, [handleKeyDown, handleKeyUp]);
+
   return (
     <div
       ref={containerRef}
       style={{ width: "100%", height: canvasHeight, position: "relative", background: "#0d0d12" }}
-      className="rounded-xl overflow-hidden border border-border/30"
+      className="rounded-xl overflow-hidden border border-border/30 focus:ring-1 focus:ring-primary/30"
     />
   );
 }
