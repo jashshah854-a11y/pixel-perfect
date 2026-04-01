@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Bot, ListTodo, FileText, Briefcase, Inbox, Plug } from "lucide-react";
+import { LayoutDashboard, Bot, ListTodo, FileText, Briefcase, Inbox, Plug, Building2 } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
