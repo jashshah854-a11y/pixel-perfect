@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useState } from "react";
-import { Plug, Loader2, CheckCircle2, XCircle, Info } from "lucide-react";
+import { Plug, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const categories = [
