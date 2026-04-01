@@ -10,6 +10,7 @@ import PlansPage from "./pages/PlansPage.tsx";
 import JobsPage from "./pages/JobsPage.tsx";
 import InboxPage from "./pages/InboxPage.tsx";
 import IntegrationsPage from "./pages/IntegrationsPage.tsx";
+import OfficePage from "./pages/OfficePage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/jobs" element={<JobsPage />} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/integrations" element={<IntegrationsPage />} />
+          <Route path="/office" element={<OfficePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
