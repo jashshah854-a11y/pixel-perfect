@@ -1,14 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Zap, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { toast } from "sonner";
 
 export default function JobsPage() {
+  const queryClient = useQueryClient();
   const [filterVerdict, setFilterVerdict] = useState("");
   const [minGhostScore, setMinGhostScore] = useState(0);
+  const [sweepLoading, setSweepLoading] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const { data: sweeps, isLoading } = useQuery({
     queryKey: ["sweep_results"],
@@ -34,6 +39,20 @@ export default function JobsPage() {
     },
   });
 
+  const { data: neonStats } = useQuery({
+    queryKey: ["neon-stats"],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("sync-neon-stats");
+        if (error) return null;
+        return data;
+      } catch {
+        return null;
+      }
+    },
+    retry: false,
+  });
+
   const totalTokens = agents?.reduce((sum, a) => sum + a.tokens_used, 0) || 0;
 
   const filtered = sweeps?.filter((s) => {
@@ -48,10 +67,76 @@ export default function JobsPage() {
     return "text-red-400";
   };
 
+  const triggerSweep = async () => {
+    setSweepLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ghost-sweep-trigger");
+      if (error) throw error;
+      toast.success(`Sweep triggered! ${JSON.stringify(data)}`);
+    } catch (err: any) {
+      toast.error(`Sweep failed: ${err.message}`);
+    } finally {
+      setSweepLoading(false);
+    }
+  };
+
+  const syncJobs = async () => {
+    setSyncLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-neon-jobs");
+      if (error) throw error;
+      toast.success(`Synced ${data?.synced || 0} of ${data?.total || 0} jobs`);
+      queryClient.invalidateQueries({ queryKey: ["sweep_results"] });
+    } catch (err: any) {
+      toast.error(`Sync failed: ${err.message}`);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  const logAndApply = async (job: any) => {
+    try {
+      await supabase.functions.invoke("log-application", {
+        body: {
+          company: job.company,
+          job_title: job.job_title,
+          apply_url: job.apply_url,
+          fit_score: job.fit_score,
+          verdict: job.verdict,
+        },
+      });
+    } catch {
+      // silent fail on logging
+    }
+    if (job.apply_url) {
+      window.open(job.apply_url, "_blank", "noopener,noreferrer");
+    }
+  };
+
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Ghost Sweep Jobs</h2>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-xl font-semibold">Ghost Sweep Jobs</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={triggerSweep}
+              disabled={sweepLoading}
+              className="flex items-center gap-1.5 text-xs rounded-md bg-primary text-primary-foreground px-3 py-1.5 hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              <Zap className={`h-3 w-3 ${sweepLoading ? "animate-pulse" : ""}`} />
+              {sweepLoading ? "Sweeping..." : "Trigger Sweep"}
+            </button>
+            <button
+              onClick={syncJobs}
+              disabled={syncLoading}
+              className="flex items-center gap-1.5 text-xs rounded-md border px-3 py-1.5 hover:bg-muted/50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3 w-3 ${syncLoading ? "animate-spin" : ""}`} />
+              {syncLoading ? "Syncing..." : "Sync Jobs"}
+            </button>
+          </div>
+        </div>
 
         <div className="flex gap-2 flex-wrap">
           <select value={filterVerdict} onChange={(e) => setFilterVerdict(e.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm">
@@ -98,9 +183,12 @@ export default function JobsPage() {
                     <td className="p-3"><StatusBadge value={s.verdict} /></td>
                     <td className="p-3">
                       {s.apply_url && (
-                        <a href={s.apply_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                        <button
+                          onClick={() => logAndApply(s)}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
                           Apply <ExternalLink className="h-3 w-3" />
-                        </a>
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -110,6 +198,47 @@ export default function JobsPage() {
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">No sweep results yet.</p>
+        )}
+
+        {/* Sweep History */}
+        {neonStats?.recent_sweeps && neonStats.recent_sweeps.length > 0 && (
+          <div className="rounded-lg border">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center justify-between w-full p-3 text-sm font-medium hover:bg-muted/20"
+            >
+              Sweep History ({neonStats.recent_sweeps.length} runs)
+              {showHistory ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            {showHistory && (
+              <div className="border-t overflow-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left p-2 font-medium text-muted-foreground">Started</th>
+                      <th className="text-left p-2 font-medium text-muted-foreground">Scraped</th>
+                      <th className="text-left p-2 font-medium text-muted-foreground">Apply</th>
+                      <th className="text-left p-2 font-medium text-muted-foreground">Maybe</th>
+                      <th className="text-left p-2 font-medium text-muted-foreground">Skip</th>
+                      <th className="text-left p-2 font-medium text-muted-foreground">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {neonStats.recent_sweeps.map((run: any) => (
+                      <tr key={run.id} className="border-b">
+                        <td className="p-2 font-mono">{run.started_at ? new Date(run.started_at).toLocaleString() : "—"}</td>
+                        <td className="p-2 font-mono">{run.scraped_count ?? "—"}</td>
+                        <td className="p-2 font-mono">{run.apply_count ?? "—"}</td>
+                        <td className="p-2 font-mono">{run.maybe_count ?? "—"}</td>
+                        <td className="p-2 font-mono">{run.skip_count ?? "—"}</td>
+                        <td className="p-2"><StatusBadge value={run.status || "unknown"} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </Layout>
