@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState } from "react";
 import { useOfficePixiRuntime } from "./useOfficePixiRuntime";
 import { buildScene, getSceneHeight, type AgentSprite } from "./officeScene";
-import { animateAgents, resetTick } from "./officeTicker";
+import { animateAgents, resetTick, registerClock } from "./officeTicker";
+import { Graphics } from "pixi.js";
 
 interface Agent {
   id: string;
@@ -22,7 +23,7 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const app = useOfficePixiRuntime(containerRef);
   const spritesRef = useRef<AgentSprite[]>([]);
-  const [canvasHeight, setCanvasHeight] = useState(420);
+  const [canvasHeight, setCanvasHeight] = useState(480);
 
   // Build scene when app or agents change
   useEffect(() => {
@@ -40,6 +41,24 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
     // Set canvas height
     const h = getSceneHeight() + 40;
     setCanvasHeight(h);
+
+    // Register wall clocks for animation
+    const findClocks = (container: import("pixi.js").Container) => {
+      for (const child of container.children) {
+        if (child.label === "wall-clock") {
+          const hands = (child as import("pixi.js").Container).children.find(
+            (c) => c.label === "clock-hands"
+          );
+          if (hands instanceof Graphics) {
+            registerClock(hands);
+          }
+        }
+        if ("children" in child) {
+          findClocks(child as import("pixi.js").Container);
+        }
+      }
+    };
+    findClocks(root);
 
     // Wire click handlers
     for (const sprite of agentSprites) {

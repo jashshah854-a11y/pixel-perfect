@@ -1,5 +1,5 @@
 import { Container } from "pixi.js";
-import { drawRoom, drawDesk, drawAgent, DESK_W, DESK_H } from "./officeDrawing";
+import { drawRoom, drawDesk, drawAgent, drawChair, drawWallClock, DESK_W, DESK_H, getAgentColor } from "./officeDrawing";
 
 interface Agent {
   id: string;
@@ -25,15 +25,17 @@ const DEPARTMENTS: DepartmentDef[] = [
   { name: "DevSecOps", tint: 0xf43f5e },
 ];
 
-const ROOM_W = 260;
-const ROOM_H = 180;
+const ROOM_W = 300;
+const ROOM_H = 220;
 const ROOM_GAP = 16;
 const COLS = 3;
+const SLOT_W = 120;
 
 export interface AgentSprite {
   container: Container;
   agent: Agent;
   baseY: number;
+  baseX: number;
 }
 
 export function buildScene(
@@ -53,7 +55,7 @@ export function buildScene(
 
   // Calculate centering offset
   const gridW = COLS * ROOM_W + (COLS - 1) * ROOM_GAP;
-  const offsetX = Math.max(0, (parentWidth - gridW) / 2);
+  const offsetX = Math.max(16, (parentWidth - gridW) / 2);
 
   DEPARTMENTS.forEach((dept, idx) => {
     const col = idx % COLS;
@@ -65,15 +67,26 @@ export function buildScene(
     room.position.set(rx, ry);
     root.addChild(room);
 
+    // Wall clock in top-right of room
+    const clock = drawWallClock(ROOM_W - 20, 15);
+    room.addChild(clock);
+
     const deptAgents = byDept[dept.name] || [];
     deptAgents.forEach((agent, ai) => {
-      const deskX = 20 + ai * (DESK_W + 20);
-      const deskY = 50;
+      const deskX = 20 + ai * SLOT_W;
+      const deskY = 55;
+
+      // Desk
       const desk = drawDesk(deskX, deskY);
       room.addChild(desk);
 
+      // Chair below desk
+      const chair = drawChair(deskX + DESK_W / 2, deskY + DESK_H + 18, getAgentColor(agent.name));
+      room.addChild(chair);
+
+      // Agent below chair
       const agentX = deskX + DESK_W / 2;
-      const agentY = deskY + DESK_H + 28;
+      const agentY = deskY + DESK_H + 52;
       const agentContainer = drawAgent(agent.name, agent.status, agentX, agentY);
       room.addChild(agentContainer);
 
@@ -81,6 +94,7 @@ export function buildScene(
         container: agentContainer,
         agent,
         baseY: agentY,
+        baseX: agentX,
       });
     });
   });
@@ -90,5 +104,5 @@ export function buildScene(
 
 export function getSceneHeight(): number {
   const rows = Math.ceil(DEPARTMENTS.length / COLS);
-  return rows * (ROOM_H + ROOM_GAP) - ROOM_GAP;
+  return rows * (ROOM_H + ROOM_GAP) - ROOM_GAP + 20;
 }
