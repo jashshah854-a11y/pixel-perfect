@@ -70,7 +70,7 @@ export default function IntegrationsPage() {
         } catch { message = "Edge function error"; }
       } else if (tool.api_url) {
         try {
-          const res = await fetch(tool.api_url, { method: "HEAD", mode: "no-cors" });
+          await fetch(tool.api_url, { method: "HEAD", mode: "no-cors" });
           reachable = true;
           message = "Endpoint reachable (no-cors)";
         } catch { message = "Unreachable"; }
