@@ -1,5 +1,9 @@
 import { Container } from "pixi.js";
-import { drawRoom, drawDesk, drawAgent, drawChair, drawWallClock, DESK_W, DESK_H, getAgentColor } from "./officeDrawing";
+import {
+  drawRoom, drawDesk, drawAgent, drawChair, drawWallClock,
+  drawCEO, drawCollabTable, drawHallway, drawBreakRoom, drawBed,
+  DESK_W, DESK_H, getAgentColor,
+} from "./officeDrawing";
 
 interface Agent {
   id: string;
@@ -30,10 +34,13 @@ const GRID_COLS = 3;
 const ROOM_GAP = 16;
 const ROOM_PAD_LEFT = 16;
 const ROOM_PAD_RIGHT = 16;
-const ROOM_HEADER_H = 52;  // wall / header zone
-const SLOT_W = 100;        // horizontal space per agent slot
-const SLOT_H = 155;        // vertical space per agent row (desk + chair + avatar + gap)
+const ROOM_HEADER_H = 52;
+const SLOT_W = 100;
+const SLOT_H = 155;
 const ROOM_BOTTOM_PAD = 18;
+const CEO_OFFICE_H = 220;
+const HALLWAY_H = 32;
+const EDGE_PAD = 16;
 
 export interface AgentSprite {
   container: Container;
@@ -42,29 +49,71 @@ export interface AgentSprite {
   baseX: number;
 }
 
-/** How many agent columns fit inside a room of the given width */
+export interface SceneResult {
+  root: Container;
+  agentSprites: AgentSprite[];
+  ceoContainer: Container;
+  ceoBounds: { x: number; y: number; w: number; h: number };
+  roomContainers: { container: Container; y: number; h: number; name: string }[];
+  coffeeMachinePos: { x: number; y: number };
+}
+
 function slotsPerRow(roomW: number): number {
   return Math.max(1, Math.floor((roomW - ROOM_PAD_LEFT - ROOM_PAD_RIGHT) / SLOT_W));
 }
 
-/** Dynamic room height based on how many agent rows are needed */
 function roomHeight(agentCount: number, roomW: number): number {
   const cols = slotsPerRow(roomW);
   const rows = Math.max(1, Math.ceil(agentCount / cols));
   return ROOM_HEADER_H + rows * SLOT_H + ROOM_BOTTOM_PAD;
 }
 
-/** Scene-level state so getSceneHeight() can return the computed value */
 let lastSceneHeight = 480;
 
 export function buildScene(
   agents: Agent[],
   parentWidth: number
-): { root: Container; agentSprites: AgentSprite[] } {
+): SceneResult {
   const root = new Container();
   const agentSprites: AgentSprite[] = [];
+  const roomContainers: SceneResult["roomContainers"] = [];
+  let cursorY = 0;
 
-  // Group agents by department
+  const fullW = parentWidth - EDGE_PAD * 2;
+
+  // === CEO Office ===
+  const ceoRoom = drawRoom("CEO Office — Jash", fullW, CEO_OFFICE_H, 0xf59e0b);
+  ceoRoom.position.set(EDGE_PAD, cursorY);
+  root.addChild(ceoRoom);
+
+  // Collab table
+  const collabTable = drawCollabTable(fullW / 2, CEO_OFFICE_H / 2 + 10);
+  ceoRoom.addChild(collabTable);
+
+  // CEO avatar
+  const ceoAvatar = drawCEO(fullW / 2, CEO_OFFICE_H / 2 - 30);
+  ceoRoom.addChild(ceoAvatar);
+
+  const ceoBounds = {
+    x: EDGE_PAD + 30,
+    y: cursorY + 40,
+    w: fullW - 60,
+    h: CEO_OFFICE_H - 60,
+  };
+
+  // Wall clock
+  const ceoClock = drawWallClock(fullW - 24, 15);
+  ceoRoom.addChild(ceoClock);
+
+  cursorY += CEO_OFFICE_H + ROOM_GAP;
+
+  // === Hallway ===
+  const hallway = drawHallway(fullW);
+  hallway.position.set(EDGE_PAD, cursorY);
+  root.addChild(hallway);
+  cursorY += HALLWAY_H + ROOM_GAP;
+
+  // === Department Grid ===
   const byDept: Record<string, Agent[]> = {};
   for (const a of agents) {
     const dept = a.department || "Dev";
@@ -72,21 +121,14 @@ export function buildScene(
     byDept[dept].push(a);
   }
 
-  // Responsive column count: drop to 2 cols if viewport is narrow
   const cols = parentWidth < 720 ? 2 : GRID_COLS;
-
-  // Room width scales to fill parent evenly
-  const roomW = Math.floor(
-    (parentWidth - 32 - (cols - 1) * ROOM_GAP) / cols
-  );
+  const roomW = Math.floor((fullW - (cols - 1) * ROOM_GAP) / cols);
   const clampedRoomW = Math.max(220, roomW);
 
-  // Pre-calculate each department's room height
   const roomHeights = DEPARTMENTS.map((dept) =>
     roomHeight((byDept[dept.name] || []).length, clampedRoomW)
   );
 
-  // For each grid row, all rooms share the tallest height in that row
   const gridRows = Math.ceil(DEPARTMENTS.length / cols);
   const rowHeights: number[] = [];
   for (let r = 0; r < gridRows; r++) {
@@ -98,29 +140,25 @@ export function buildScene(
     rowHeights.push(maxH);
   }
 
-  // Cumulative row Y offsets
-  const rowY: number[] = [];
-  let cy = 0;
-  for (const h of rowHeights) {
-    rowY.push(cy);
-    cy += h + ROOM_GAP;
-  }
-  lastSceneHeight = cy - ROOM_GAP + 20;
-
-  const offsetX = 16; // left edge padding
+  const deptStartY = cursorY;
 
   DEPARTMENTS.forEach((dept, idx) => {
     const col = idx % cols;
     const row = Math.floor(idx / cols);
-    const rx = offsetX + col * (clampedRoomW + ROOM_GAP);
-    const ry = rowY[row];
+
+    let ry = deptStartY;
+    for (let r = 0; r < row; r++) ry += rowHeights[r] + ROOM_GAP;
+
+    const rx = EDGE_PAD + col * (clampedRoomW + ROOM_GAP);
     const rh = rowHeights[row];
 
     const room = drawRoom(dept.name, clampedRoomW, rh, dept.tint);
     room.position.set(rx, ry);
     root.addChild(room);
 
-    // Wall clock top-right
+    roomContainers.push({ container: room, y: ry, h: rh, name: dept.name });
+
+    // Wall clock
     const clock = drawWallClock(clampedRoomW - 24, 15);
     room.addChild(clock);
 
@@ -131,7 +169,6 @@ export function buildScene(
       const agentCol = ai % perRow;
       const agentRow = Math.floor(ai / perRow);
 
-      // Center slots horizontally within the room
       const slotAreaW = Math.min(deptAgents.length, perRow) * SLOT_W;
       const slotOffsetX = Math.floor((clampedRoomW - slotAreaW) / 2);
 
@@ -143,6 +180,12 @@ export function buildScene(
 
       const chair = drawChair(deskX + DESK_W / 2, deskY + DESK_H + 16, getAgentColor(agent.name));
       room.addChild(chair);
+
+      // Bed for offline agents
+      if (agent.status === "offline") {
+        const bed = drawBed(deskX + DESK_W + 20, deskY + DESK_H + 30);
+        room.addChild(bed);
+      }
 
       const agentX = deskX + DESK_W / 2;
       const agentY = deskY + DESK_H + 50;
@@ -158,7 +201,28 @@ export function buildScene(
     });
   });
 
-  return { root, agentSprites };
+  // Update cursorY past department grid
+  for (const rh of rowHeights) cursorY += rh + ROOM_GAP;
+
+  // === Break Room ===
+  cursorY += ROOM_GAP;
+  const breakRoom = drawBreakRoom(fullW);
+  breakRoom.position.set(EDGE_PAD, cursorY);
+  root.addChild(breakRoom);
+
+  const coffeeMachinePos = { x: EDGE_PAD + 60, y: cursorY + 50 };
+
+  cursorY += 160 + 20;
+  lastSceneHeight = cursorY;
+
+  return {
+    root,
+    agentSprites,
+    ceoContainer: ceoAvatar,
+    ceoBounds,
+    roomContainers,
+    coffeeMachinePos,
+  };
 }
 
 export function getSceneHeight(): number {
