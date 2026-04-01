@@ -10,6 +10,7 @@ const navItems = [
   { label: "Jobs", path: "/jobs", icon: Briefcase },
   { label: "Inbox", path: "/inbox", icon: Inbox },
   { label: "Integrations", path: "/integrations", icon: Plug },
+  { label: "Office", path: "/office", icon: Building2 },
 ];
 
 interface LayoutProps {
