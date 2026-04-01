@@ -77,7 +77,7 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
     const tickFn = () => animateAgents(spritesRef.current);
     app.ticker.add(tickFn);
     return () => {
-      app.ticker.remove(tickFn);
+      app.ticker?.remove(tickFn);
     };
   }, [app]);
 
