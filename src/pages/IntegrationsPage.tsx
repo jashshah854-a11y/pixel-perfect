@@ -1,10 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { Plug, Wifi, WifiOff, AlertTriangle, Clock, ExternalLink, Settings2 } from "lucide-react";
+import { Plug, Wifi, WifiOff, AlertTriangle, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 const categoryOrder = [
