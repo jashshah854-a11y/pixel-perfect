@@ -111,7 +111,7 @@ export function animateScene(agentSprites: AgentSprite[]) {
 function updateParticles() {
   if (!particleGraphics) return;
 
-  // Spawn new particles at coffee machine
+  // Spawn from break room coffee machine
   if (sceneRef && tick % 20 === 0) {
     const pos = sceneRef.coffeeMachinePos;
     for (let i = 0; i < 3; i++) {
@@ -126,17 +126,43 @@ function updateParticles() {
     }
   }
 
-  // Update
+  // Spawn from desk coffee mugs (every ~40 ticks, 1-2 particles per mug)
+  if (sceneRef && tick % 40 === 0) {
+    for (const mug of sceneRef.mugPositions) {
+      for (let i = 0; i < 2; i++) {
+        particles.push({
+          x: mug.x + (Math.random() - 0.5) * 4,
+          y: mug.y - 6,
+          vx: (Math.random() - 0.5) * 0.15,
+          vy: -0.2 - Math.random() * 0.25,
+          alpha: 0.15 + Math.random() * 0.1,
+          life: 40 + Math.random() * 30,
+        });
+      }
+    }
+  }
+
+  // Animate monitor screens for working agents
+  if (sceneRef) {
+    for (const mon of sceneRef.monitorScreens) {
+      if (mon.status === "working") {
+        // Subtle color shift via alpha oscillation
+        mon.container.alpha = 0.8 + Math.sin(tick * 0.08 + mon.container.x * 0.1) * 0.15;
+      }
+    }
+  }
+
+  // Update particles
   particleGraphics.clear();
   const alive: Particle[] = [];
   for (const p of particles) {
     p.x += p.vx;
     p.y += p.vy;
     p.life--;
-    p.alpha -= 0.004;
+    p.alpha -= 0.003;
     if (p.life > 0 && p.alpha > 0.01) {
       alive.push(p);
-      particleGraphics.circle(p.x, p.y, 1.5 + (1 - p.alpha) * 1.5);
+      particleGraphics.circle(p.x, p.y, 1.2 + (1 - p.alpha) * 1.2);
       particleGraphics.fill({ color: 0x9ca3af, alpha: p.alpha });
     }
   }

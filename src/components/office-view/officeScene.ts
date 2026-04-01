@@ -56,6 +56,8 @@ export interface SceneResult {
   ceoBounds: { x: number; y: number; w: number; h: number };
   roomContainers: { container: Container; y: number; h: number; name: string }[];
   coffeeMachinePos: { x: number; y: number };
+  mugPositions: { x: number; y: number }[];
+  monitorScreens: { container: Container; status: string }[];
 }
 
 function slotsPerRow(roomW: number): number {
@@ -77,6 +79,8 @@ export function buildScene(
   const root = new Container();
   const agentSprites: AgentSprite[] = [];
   const roomContainers: SceneResult["roomContainers"] = [];
+  const mugPositions: { x: number; y: number }[] = [];
+  const monitorScreens: { container: Container; status: string }[] = [];
   let cursorY = 0;
 
   const fullW = parentWidth - EDGE_PAD * 2;
@@ -178,6 +182,18 @@ export function buildScene(
       const desk = drawDesk(deskX, deskY);
       room.addChild(desk);
 
+      // Track mug world position (mug is at DESK_W - 14, DESK_H - 14 relative to desk)
+      mugPositions.push({
+        x: rx + deskX + DESK_W - 14,
+        y: ry + deskY + DESK_H - 14,
+      });
+
+      // Track monitor screen for working agents
+      const monScreen = desk.children.find((c) => c.label === "monitor-screen");
+      if (monScreen) {
+        monitorScreens.push({ container: monScreen as Container, status: agent.status });
+      }
+
       const chair = drawChair(deskX + DESK_W / 2, deskY + DESK_H + 16, getAgentColor(agent.name));
       room.addChild(chair);
 
@@ -222,6 +238,8 @@ export function buildScene(
     ceoBounds,
     roomContainers,
     coffeeMachinePos,
+    mugPositions,
+    monitorScreens,
   };
 }
 
