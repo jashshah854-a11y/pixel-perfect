@@ -128,7 +128,7 @@ export function drawRoom(
 
   // Header bar
   const header = new Graphics();
-  header.roundRect(0, 0, w, 28, { tl: 8, tr: 8, bl: 0, br: 0 });
+  header.roundRect(0, 0, w, 28, 8);
   header.fill({ color: tint, alpha: 0.15 });
   c.addChild(header);
 
