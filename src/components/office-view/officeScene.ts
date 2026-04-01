@@ -238,6 +238,8 @@ export function buildScene(
     ceoBounds,
     roomContainers,
     coffeeMachinePos,
+    mugPositions,
+    monitorScreens,
   };
 }
 
