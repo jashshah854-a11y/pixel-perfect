@@ -45,9 +45,15 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
     // Set scene ref for ticker
     setSceneRef(scene);
 
-    // Set canvas height
+    // Set canvas height and force PixiJS renderer resize
     const h = getSceneHeight() + 40;
     setCanvasHeight(h);
+    // Force renderer resize after React updates the div
+    requestAnimationFrame(() => {
+      if (containerRef.current) {
+        app.renderer.resize(containerRef.current.clientWidth, h);
+      }
+    });
 
     // Register wall clocks
     const findClocks = (container: import("pixi.js").Container) => {
