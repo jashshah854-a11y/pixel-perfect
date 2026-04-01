@@ -84,8 +84,8 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
   return (
     <div
       ref={containerRef}
-      style={{ width: "100%", height: canvasHeight, position: "relative" }}
-      className="rounded-xl overflow-hidden border border-border/50"
+      style={{ width: "100%", height: canvasHeight, position: "relative", background: "#0d0d12" }}
+      className="rounded-xl overflow-hidden border border-border/30"
     />
   );
 }

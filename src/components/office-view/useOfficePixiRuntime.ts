@@ -15,7 +15,7 @@ export function useOfficePixiRuntime(containerRef: React.RefObject<HTMLDivElemen
 
     pixiApp
       .init({
-        background: 0x0a0a0a,
+        backgroundAlpha: 0,
         antialias: true,
         resizeTo: el,
         autoDensity: true,

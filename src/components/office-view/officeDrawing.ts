@@ -306,10 +306,16 @@ export function drawRoom(
 ): Container {
   const c = new Container();
 
-  // Floor with tiled pattern
+  // Base dark panel — gives rooms a distinct background against the canvas
+  const base = new Graphics();
+  base.roundRect(0, 0, w, h, 8);
+  base.fill({ color: 0x111116, alpha: 0.92 });
+  c.addChild(base);
+
+  // Tinted floor overlay
   const floor = new Graphics();
-  floor.roundRect(0, 0, w, h, 6);
-  floor.fill({ color: tint, alpha: 0.04 });
+  floor.roundRect(0, 0, w, h, 8);
+  floor.fill({ color: tint, alpha: 0.06 });
   c.addChild(floor);
 
   // Floor tiles (checkerboard, subtle)
@@ -328,25 +334,28 @@ export function drawRoom(
   }
   c.addChild(tiles);
 
-  // Room border
+  // Room border — more visible accent stroke
   const border = new Graphics();
-  border.roundRect(0, 0, w, h, 6);
-  border.stroke({ color: tint, width: 1, alpha: 0.12 });
+  border.roundRect(0, 0, w, h, 8);
+  border.stroke({ color: tint, width: 1.5, alpha: 0.35 });
   c.addChild(border);
 
+  // Top accent line (color bar at very top)
+  const topBar = new Graphics();
+  topBar.roundRect(0, 0, w, 3, 8);
+  topBar.fill({ color: tint, alpha: 0.7 });
+  c.addChild(topBar);
+
   // Wall header with gradient
-  const wallH = 30;
+  const wallH = 36;
   const wall = new Graphics();
-  const bands = 12;
+  const bands = 16;
   const bandH = wallH / bands;
   for (let i = 0; i < bands; i++) {
-    const alpha = 0.12 + (1 - i / bands) * 0.08;
-    wall.rect(0, i * bandH, w, bandH + 0.5);
+    const alpha = 0.22 - (i / bands) * 0.18;
+    wall.rect(0, 3 + i * bandH, w, bandH + 0.5);
     wall.fill({ color: tint, alpha });
   }
-  // Round top corners
-  wall.roundRect(0, 0, w, wallH, 6);
-  wall.stroke({ color: tint, width: 0.5, alpha: 0.15 });
   c.addChild(wall);
 
   // Room name
