@@ -79,6 +79,8 @@ export function buildScene(
   const root = new Container();
   const agentSprites: AgentSprite[] = [];
   const roomContainers: SceneResult["roomContainers"] = [];
+  const mugPositions: { x: number; y: number }[] = [];
+  const monitorScreens: { container: Container; status: string }[] = [];
   let cursorY = 0;
 
   const fullW = parentWidth - EDGE_PAD * 2;
