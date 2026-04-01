@@ -115,6 +115,8 @@ export type Database = {
           ghost_score: number
           id: string
           job_title: string
+          location: string | null
+          salary: string | null
           swept_at: string
           verdict: string
         }
@@ -126,6 +128,8 @@ export type Database = {
           ghost_score?: number
           id?: string
           job_title: string
+          location?: string | null
+          salary?: string | null
           swept_at?: string
           verdict?: string
         }
@@ -137,6 +141,8 @@ export type Database = {
           ghost_score?: number
           id?: string
           job_title?: string
+          location?: string | null
+          salary?: string | null
           swept_at?: string
           verdict?: string
         }
@@ -185,6 +191,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tool_connections: {
+        Row: {
+          api_url: string | null
+          category: string
+          config: Json | null
+          id: string
+          last_ping: string | null
+          name: string
+          notes: string | null
+          status: string | null
+        }
+        Insert: {
+          api_url?: string | null
+          category: string
+          config?: Json | null
+          id: string
+          last_ping?: string | null
+          name: string
+          notes?: string | null
+          status?: string | null
+        }
+        Update: {
+          api_url?: string | null
+          category?: string
+          config?: Json | null
+          id?: string
+          last_ping?: string | null
+          name?: string
+          notes?: string | null
+          status?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
