@@ -54,6 +54,7 @@ export type Database = {
           id: string
           message: string
           read: boolean
+          to_agent: string | null
           type: string
         }
         Insert: {
@@ -62,6 +63,7 @@ export type Database = {
           id?: string
           message: string
           read?: boolean
+          to_agent?: string | null
           type?: string
         }
         Update: {
@@ -70,6 +72,7 @@ export type Database = {
           id?: string
           message?: string
           read?: boolean
+          to_agent?: string | null
           type?: string
         }
         Relationships: [

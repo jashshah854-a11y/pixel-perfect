@@ -1,0 +1,1 @@
+ALTER TABLE public.inbox ADD COLUMN to_agent text;
