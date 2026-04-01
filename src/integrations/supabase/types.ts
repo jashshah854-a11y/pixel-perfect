@@ -14,7 +14,178 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agents: {
+        Row: {
+          current_task: string | null
+          department: string
+          id: string
+          last_active: string | null
+          name: string
+          role: string
+          status: string
+          tokens_used: number
+        }
+        Insert: {
+          current_task?: string | null
+          department: string
+          id: string
+          last_active?: string | null
+          name: string
+          role: string
+          status?: string
+          tokens_used?: number
+        }
+        Update: {
+          current_task?: string | null
+          department?: string
+          id?: string
+          last_active?: string | null
+          name?: string
+          role?: string
+          status?: string
+          tokens_used?: number
+        }
+        Relationships: []
+      }
+      inbox: {
+        Row: {
+          created_at: string
+          from_agent: string | null
+          id: string
+          message: string
+          read: boolean
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          from_agent?: string | null
+          id?: string
+          message: string
+          read?: boolean
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          from_agent?: string | null
+          id?: string
+          message?: string
+          read?: boolean
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_from_agent_fkey"
+            columns: ["from_agent"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          created_at: string
+          id: string
+          markdown_content: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          markdown_content?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          markdown_content?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      sweep_results: {
+        Row: {
+          apply_url: string | null
+          company: string
+          fit_score: number
+          flags: Json | null
+          ghost_score: number
+          id: string
+          job_title: string
+          swept_at: string
+          verdict: string
+        }
+        Insert: {
+          apply_url?: string | null
+          company: string
+          fit_score?: number
+          flags?: Json | null
+          ghost_score?: number
+          id?: string
+          job_title: string
+          swept_at?: string
+          verdict?: string
+        }
+        Update: {
+          apply_url?: string | null
+          company?: string
+          fit_score?: number
+          flags?: Json | null
+          ghost_score?: number
+          id?: string
+          job_title?: string
+          swept_at?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          priority: string
+          source: string
+          status: string
+          title: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          priority?: string
+          source?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          priority?: string
+          source?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
