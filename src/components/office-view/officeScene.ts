@@ -56,6 +56,8 @@ export interface SceneResult {
   ceoBounds: { x: number; y: number; w: number; h: number };
   roomContainers: { container: Container; y: number; h: number; name: string }[];
   coffeeMachinePos: { x: number; y: number };
+  mugPositions: { x: number; y: number }[];
+  monitorScreens: { container: Container; status: string }[];
 }
 
 function slotsPerRow(roomW: number): number {
