@@ -18,6 +18,13 @@ interface LayoutProps {
 
 export function Layout({ children, totalTokens = 0, unreadCount = 0 }: LayoutProps) {
   const location = useLocation();
+  const [soundOff, setSoundOff] = useState(isMuted());
+
+  const toggleSound = () => {
+    const next = !soundOff;
+    setSoundOff(next);
+    setMuted(next);
+  };
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
