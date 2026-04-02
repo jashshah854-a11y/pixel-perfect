@@ -17,7 +17,7 @@ type Checker = (url: string, config: Record<string, any>) => Promise<CheckResult
 const HEALTH_CHECKS: Record<string, Checker> = {
   openai: async (url, _config) => {
     const res = await fetch(`${url}/models`, {
-      headers: { 'Authorization': `Bearer ${Deno.env.get('GEMINI_API_KEY') || ''}` }
+      headers: { 'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY') || ''}` }
     });
     if (res.ok) {
       const data = await res.json();
