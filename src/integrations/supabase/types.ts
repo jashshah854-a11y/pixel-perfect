@@ -14,6 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_collaborations: {
+        Row: {
+          collab_type: string
+          created_at: string
+          from_agent: string
+          id: string
+          message: string
+          resolved_at: string | null
+          status: string
+          task_id: string | null
+          to_agent: string
+        }
+        Insert: {
+          collab_type?: string
+          created_at?: string
+          from_agent: string
+          id?: string
+          message: string
+          resolved_at?: string | null
+          status?: string
+          task_id?: string | null
+          to_agent: string
+        }
+        Update: {
+          collab_type?: string
+          created_at?: string
+          from_agent?: string
+          id?: string
+          message?: string
+          resolved_at?: string | null
+          status?: string
+          task_id?: string | null
+          to_agent?: string
+        }
+        Relationships: []
+      }
+      agent_memory: {
+        Row: {
+          agent_id: string
+          confidence: number
+          content: string
+          created_at: string
+          id: string
+          memory_type: string
+          source_task_id: string | null
+          tags: string[] | null
+        }
+        Insert: {
+          agent_id: string
+          confidence?: number
+          content: string
+          created_at?: string
+          id?: string
+          memory_type?: string
+          source_task_id?: string | null
+          tags?: string[] | null
+        }
+        Update: {
+          agent_id?: string
+          confidence?: number
+          content?: string
+          created_at?: string
+          id?: string
+          memory_type?: string
+          source_task_id?: string | null
+          tags?: string[] | null
+        }
+        Relationships: []
+      }
+      agent_research_log: {
+        Row: {
+          agent_id: string
+          applied: boolean
+          findings: string | null
+          id: string
+          relevance_score: number
+          researched_at: string
+          source_url: string | null
+          topic: string
+        }
+        Insert: {
+          agent_id: string
+          applied?: boolean
+          findings?: string | null
+          id?: string
+          relevance_score?: number
+          researched_at?: string
+          source_url?: string | null
+          topic: string
+        }
+        Update: {
+          agent_id?: string
+          applied?: boolean
+          findings?: string | null
+          id?: string
+          relevance_score?: number
+          researched_at?: string
+          source_url?: string | null
+          topic?: string
+        }
+        Relationships: []
+      }
       agents: {
         Row: {
           current_task: string | null
