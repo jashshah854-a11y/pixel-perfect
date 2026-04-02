@@ -1,8 +1,9 @@
-import { Container } from "pixi.js";
+import { Container, Graphics } from "pixi.js";
 import {
   drawRoom, drawDesk, drawAgent, drawChair, drawWallClock,
   drawCEO, drawCollabTable, drawHallway, drawBreakRoom, drawBed,
   drawWhiteboard, drawFilingCabinet, drawDeskLamp, drawRug,
+  drawServerRack, drawResearchGlobe, drawCeilingLight,
   DESK_W, DESK_H, getAgentColor,
 } from "./officeDrawing";
 
@@ -30,17 +31,16 @@ const DEPARTMENTS: DepartmentDef[] = [
   { name: "DevOps", tint: 0xf43f5e },
 ];
 
-// Layout constants
 const GRID_COLS = 3;
 const ROOM_GAP = 16;
 const ROOM_PAD_LEFT = 16;
 const ROOM_PAD_RIGHT = 16;
 const ROOM_HEADER_H = 52;
-const SLOT_W = 100;
-const SLOT_H = 155;
-const ROOM_BOTTOM_PAD = 18;
-const CEO_OFFICE_H = 220;
-const HALLWAY_H = 32;
+const SLOT_W = 110;
+const SLOT_H = 160;
+const ROOM_BOTTOM_PAD = 20;
+const CEO_OFFICE_H = 240;
+const HALLWAY_H = 36;
 const EDGE_PAD = 16;
 
 export interface AgentSprite {
@@ -94,21 +94,39 @@ export function buildScene(
 
   const fullW = parentWidth - EDGE_PAD * 2;
 
-  // === CEO Office ===
-  const ceoRoom = drawRoom("CEO Office — Jash", fullW, CEO_OFFICE_H, 0xf59e0b);
+  // === CEO War Room ===
+  const ceoRoom = drawRoom("CEO WAR ROOM — JASH", fullW, CEO_OFFICE_H, 0xf59e0b);
   ceoRoom.position.set(EDGE_PAD, cursorY);
   root.addChild(ceoRoom);
 
-  // Rug under collab table
-  const rug = drawRug(fullW / 2, CEO_OFFICE_H / 2 + 14, 90, 30, 0xf59e0b);
+  // Rug
+  const rug = drawRug(fullW / 2, CEO_OFFICE_H / 2 + 20, 100, 35, 0xf59e0b);
   ceoRoom.addChild(rug);
 
+  // Ceiling lights
+  ceoRoom.addChild(drawCeilingLight(fullW * 0.25, 36, 0xf59e0b));
+  ceoRoom.addChild(drawCeilingLight(fullW * 0.75, 36, 0xf59e0b));
+
+  // Multi-monitor wall (3 screens at the top)
+  const monWall = new Graphics();
+  const mwY = 38;
+  for (let i = 0; i < 3; i++) {
+    const mwX = fullW / 2 - 70 + i * 50;
+    monWall.roundRect(mwX, mwY, 40, 24, 2);
+    monWall.fill(0x0a0a0e);
+    monWall.stroke({ color: 0xf59e0b, width: 0.5, alpha: 0.2 });
+    monWall.roundRect(mwX + 2, mwY + 2, 36, 20, 1);
+    monWall.fill({ color: 0x0d1b2a, alpha: 0.9 });
+  }
+  monWall.label = "ceo-monitor-wall";
+  ceoRoom.addChild(monWall);
+
   // Collab table
-  const collabTable = drawCollabTable(fullW / 2, CEO_OFFICE_H / 2 + 10);
+  const collabTable = drawCollabTable(fullW / 2, CEO_OFFICE_H / 2 + 20);
   ceoRoom.addChild(collabTable);
 
   // CEO avatar
-  const ceoAvatar = drawCEO(fullW / 2, CEO_OFFICE_H / 2 - 30);
+  const ceoAvatar = drawCEO(fullW / 2, CEO_OFFICE_H / 2 - 20);
   ceoRoom.addChild(ceoAvatar);
 
   const ceoBounds = {
@@ -118,8 +136,7 @@ export function buildScene(
     h: CEO_OFFICE_H - 60,
   };
 
-  // Wall clock
-  const ceoClock = drawWallClock(fullW - 24, 15);
+  const ceoClock = drawWallClock(fullW - 28, 18);
   ceoRoom.addChild(ceoClock);
 
   cursorY += CEO_OFFICE_H + ROOM_GAP;
@@ -140,7 +157,7 @@ export function buildScene(
 
   const cols = parentWidth < 720 ? 2 : GRID_COLS;
   const roomW = Math.floor((fullW - (cols - 1) * ROOM_GAP) / cols);
-  const clampedRoomW = Math.max(220, roomW);
+  const clampedRoomW = Math.max(240, roomW);
 
   const roomHeights = DEPARTMENTS.map((dept) =>
     roomHeight((byDept[dept.name] || []).length, clampedRoomW)
@@ -175,16 +192,25 @@ export function buildScene(
 
     roomContainers.push({ container: room, y: ry, h: rh, name: dept.name });
 
-    // Wall clock
-    const clock = drawWallClock(clampedRoomW - 24, 15);
+    // Clock
+    const clock = drawWallClock(clampedRoomW - 28, 18);
     room.addChild(clock);
 
-    // Whiteboard in top-right area
-    const wb = drawWhiteboard(clampedRoomW - 40, 28);
+    // Whiteboard
+    const wb = drawWhiteboard(clampedRoomW - 44, 30);
     room.addChild(wb);
 
-    // Filing cabinet in even-indexed rooms
-    if (idx % 2 === 0) {
+    // Ceiling light
+    room.addChild(drawCeilingLight(clampedRoomW / 2, 38, dept.tint));
+
+    // Department-specific objects
+    if (dept.name === "DevOps") {
+      const rack = drawServerRack(clampedRoomW - 20, rh - 30);
+      room.addChild(rack);
+    } else if (dept.name === "Research") {
+      const globe = drawResearchGlobe(clampedRoomW - 22, rh - 22);
+      room.addChild(globe);
+    } else if (idx % 2 === 0) {
       const fc = drawFilingCabinet(clampedRoomW - 18, rh - 28);
       room.addChild(fc);
     }
@@ -211,29 +237,28 @@ export function buildScene(
         room.addChild(lamp);
       }
 
-      // Track mug world position (mug is at DESK_W - 14, DESK_H - 14 relative to desk)
+      // Mug position
       mugPositions.push({
         x: rx + deskX + DESK_W - 14,
-        y: ry + deskY + DESK_H - 14,
+        y: ry + deskY + DESK_H - 16,
       });
 
-      // Track monitor screen for working agents
-      const monScreen = desk.children.find((c) => c.label === "monitor-screen");
-      if (monScreen) {
-        monitorScreens.push({ container: monScreen as Container, status: agent.status });
-      }
+      // Track monitor screens
+      const monL = desk.children.find((c) => c.label === "monitor-screen-l");
+      const monR = desk.children.find((c) => c.label === "monitor-screen-r");
+      if (monL) monitorScreens.push({ container: monL as Container, status: agent.status });
+      if (monR) monitorScreens.push({ container: monR as Container, status: agent.status });
 
-      const chair = drawChair(deskX + DESK_W / 2, deskY + DESK_H + 16, getAgentColor(agent.name));
+      const chair = drawChair(deskX + DESK_W / 2, deskY + DESK_H + 18, getAgentColor(agent.name));
       room.addChild(chair);
 
-      // Bed for offline agents
       if (agent.status === "offline") {
-        const bed = drawBed(deskX + DESK_W + 20, deskY + DESK_H + 30);
+        const bed = drawBed(deskX + DESK_W + 22, deskY + DESK_H + 32);
         room.addChild(bed);
       }
 
       const agentX = deskX + DESK_W / 2;
-      const agentY = deskY + DESK_H + 50;
+      const agentY = deskY + DESK_H + 52;
       const spriteNum = hashSpriteNum(agent.id);
       const agentContainer = drawAgent(agent.name, agent.status, agentX, agentY, spriteNum, agent.department);
       room.addChild(agentContainer);
@@ -247,18 +272,17 @@ export function buildScene(
     });
   });
 
-  // Update cursorY past department grid
   for (const rh of rowHeights) cursorY += rh + ROOM_GAP;
 
-  // === Break Room ===
+  // === Neural Lounge ===
   cursorY += ROOM_GAP;
   const breakRoom = drawBreakRoom(fullW);
   breakRoom.position.set(EDGE_PAD, cursorY);
   root.addChild(breakRoom);
 
-  const coffeeMachinePos = { x: EDGE_PAD + 60, y: cursorY + 50 };
+  const coffeeMachinePos = { x: EDGE_PAD + 60, y: cursorY + 55 };
 
-  cursorY += 160 + 20;
+  cursorY += 180 + 24;
   lastSceneHeight = cursorY;
 
   return {
