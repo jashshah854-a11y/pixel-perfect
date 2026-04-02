@@ -100,6 +100,24 @@ export default function OfficePage() {
             </Button>
             <Button
               size="sm"
+              variant={activePanel === "predict" ? "default" : "outline"}
+              onClick={() => togglePanel("predict")}
+              className="h-7 text-xs"
+            >
+              <Lightbulb className="h-3 w-3 mr-1" />
+              Predict
+            </Button>
+            <Button
+              size="sm"
+              variant={activePanel === "autonomous" ? "default" : "outline"}
+              onClick={() => togglePanel("autonomous")}
+              className="h-7 text-xs"
+            >
+              <Bot className="h-3 w-3 mr-1" />
+              Auto
+            </Button>
+            <Button
+              size="sm"
               variant="outline"
               onClick={() => {
                 const depts = ["Architecture", "UI/UX", "Research", "Review", "DevOps"];
@@ -122,6 +140,8 @@ export default function OfficePage() {
             {activePanel === "health" && <SystemHealthPanel />}
             {activePanel === "executive" && <ExecutiveSummary />}
             {activePanel === "knowledge" && <KnowledgeLog agents={agents} />}
+            {activePanel === "predict" && <PredictivePanel />}
+            {activePanel === "autonomous" && <AutonomousControl />}
           </div>
         )}
 
