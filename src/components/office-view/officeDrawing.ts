@@ -861,13 +861,16 @@ export function drawCrown(): Container {
   g.closePath();
   g.fill(0xfbbf24);
   g.stroke({ color: 0xf59e0b, width: 0.8 });
-  g.circle(-2, -4, 1.2);
-  g.fill(0xef4444);
-  g.circle(2, -4, 1.2);
-  g.fill(0x3b82f6);
-  g.circle(0, -1, 1);
-  g.fill(0x22c55e);
   c.addChild(g);
+
+  const gems = new Graphics();
+  gems.circle(-2, -4, 1.2);
+  gems.fill(0xef4444);
+  gems.circle(2, -4, 1.2);
+  gems.fill(0x3b82f6);
+  gems.circle(0, -1, 1);
+  gems.fill(0x22c55e);
+  c.addChild(gems);
   return c;
 }
 
