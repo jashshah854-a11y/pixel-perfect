@@ -206,6 +206,28 @@ export function SystemHealthPanel() {
           ))}
         </div>
       )}
+
+      {/* External Actions */}
+      {externalActions && externalActions.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+            <Zap className="h-3 w-3" /> External Actions
+          </p>
+          {externalActions.map((a: any) => (
+            <div key={a.id} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] ${
+              a.status === "completed" ? "bg-emerald-500/5 border border-emerald-500/15" : "bg-red-500/5 border border-red-500/15"
+            }`}>
+              {a.status === "completed" ? (
+                <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+              ) : (
+                <XCircle className="h-3 w-3 text-red-400 shrink-0" />
+              )}
+              <span className="truncate flex-1">{a.action_type}: {a.target || "internal"}</span>
+              <span className="text-muted-foreground/60 shrink-0">{a.status}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
