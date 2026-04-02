@@ -261,13 +261,13 @@ export function drawAgent(
   arms.fill(blend(color, 0x000000, 0.15));
   // Left hand
   arms.circle(-11.5, 11, 3);
-  arms.fill(0xdbb896);
+  arms.fill(0xf0c8a0);
   // Right arm
   arms.roundRect(9, -6, 5, 16, 2.5);
   arms.fill(blend(color, 0x000000, 0.15));
   // Right hand
   arms.circle(11.5, 11, 3);
-  arms.fill(0xdbb896);
+  arms.fill(0xf0c8a0);
   c.addChild(arms);
 
   // --- Head ---
@@ -275,39 +275,38 @@ export function drawAgent(
   head.alpha = baseAlpha;
   // Neck
   head.roundRect(-3, -12, 6, 6, 2);
-  head.fill(0xdbb896);
+  head.fill(0xf0c8a0);
   // Head shape
   head.circle(0, -20, 11);
-  head.fill(0xdbb896);
-  // Hair (varies by agent for personality)
-  const hairColor = blend(color, 0x000000, 0.4);
-  head.arc(0, -22, 11, -Math.PI, 0);
+  head.fill(0xf0c8a0);
+  // Hair — short cap style, NOT side tufts
+  const hairColor = blend(color, 0x1a1a2e, 0.6);
+  // Top hair cap
+  head.arc(0, -20, 11.5, -Math.PI * 0.85, -Math.PI * 0.15);
   head.fill(hairColor);
-  // Side hair tufts
-  head.ellipse(-10, -18, 3, 5);
-  head.fill(hairColor);
-  head.ellipse(10, -18, 3, 5);
+  // Fringe/bangs
+  head.roundRect(-9, -29, 18, 5, 3);
   head.fill(hairColor);
   c.addChild(head);
 
   // --- Face ---
   const face = new Graphics();
   face.alpha = baseAlpha;
-  // Eyes
-  face.circle(-4, -21, 2);
+  // Eyes — bigger, friendlier
+  face.circle(-4, -20, 2.5);
   face.fill(0xffffff);
-  face.circle(4, -21, 2);
+  face.circle(4, -20, 2.5);
   face.fill(0xffffff);
   // Pupils
-  face.circle(-3.5, -21, 1);
-  face.fill(0x1a1a2e);
-  face.circle(4.5, -21, 1);
-  face.fill(0x1a1a2e);
+  face.circle(-3.5, -20, 1.2);
+  face.fill(0x2d2d3f);
+  face.circle(4.5, -20, 1.2);
+  face.fill(0x2d2d3f);
   // Eye shine
-  face.circle(-3, -21.5, 0.5);
-  face.fill({ color: 0xffffff, alpha: 0.7 });
-  face.circle(5, -21.5, 0.5);
-  face.fill({ color: 0xffffff, alpha: 0.7 });
+  face.circle(-3, -20.8, 0.6);
+  face.fill({ color: 0xffffff, alpha: 0.8 });
+  face.circle(5, -20.8, 0.6);
+  face.fill({ color: 0xffffff, alpha: 0.8 });
   // Mouth
   if (status === "working") {
     // Smile
@@ -544,25 +543,23 @@ export function drawCEO(x: number, y: number): Container {
   arms.roundRect(-16, -8, 5, 18, 2.5);
   arms.fill(blend(ceoColor, 0x000000, 0.15));
   arms.circle(-13.5, 11, 3.5);
-  arms.fill(0xdbb896);
+  arms.fill(0xf0c8a0);
   arms.roundRect(11, -8, 5, 18, 2.5);
   arms.fill(blend(ceoColor, 0x000000, 0.15));
   arms.circle(13.5, 11, 3.5);
-  arms.fill(0xdbb896);
+  arms.fill(0xf0c8a0);
   c.addChild(arms);
 
   // --- Head ---
   const head = new Graphics();
   head.roundRect(-3, -14, 6, 6, 2);
-  head.fill(0xdbb896);
+  head.fill(0xf0c8a0);
   head.circle(0, -24, 13);
-  head.fill(0xdbb896);
-  // Hair
-  head.arc(0, -26, 13, -Math.PI, 0);
+  head.fill(0xf0c8a0);
+  // Hair — clean short style
+  head.arc(0, -24, 13.5, -Math.PI * 0.85, -Math.PI * 0.15);
   head.fill(0x1a1a2e);
-  head.ellipse(-12, -22, 3, 6);
-  head.fill(0x1a1a2e);
-  head.ellipse(12, -22, 3, 6);
+  head.roundRect(-10, -35, 20, 6, 3);
   head.fill(0x1a1a2e);
   c.addChild(head);
 
