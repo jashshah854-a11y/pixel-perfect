@@ -4,10 +4,11 @@ import { Layout } from "@/components/Layout";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
 import { AssignmentFeed } from "@/components/AssignmentFeed";
+import { CollaborationPanel } from "@/components/CollaborationPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Zap } from "lucide-react";
+import { Plus, Zap, Users, Brain } from "lucide-react";
 import { toast } from "sonner";
 
 const columns = [
@@ -149,13 +150,22 @@ export default function TasksPage() {
           </div>
         )}
 
-        {/* Assignment Feed */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Zap className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-medium">Assignment Log</h3>
+        {/* Intelligence Panels */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-medium">Assignment Log</h3>
+            </div>
+            <AssignmentFeed agentMap={agentMap} taskMap={taskMap} />
           </div>
-          <AssignmentFeed agentMap={agentMap} taskMap={taskMap} />
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-medium">Agent Collaboration</h3>
+            </div>
+            <CollaborationPanel agentMap={agentMap} />
+          </div>
         </div>
       </div>
 

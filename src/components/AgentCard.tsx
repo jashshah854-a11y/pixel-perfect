@@ -1,4 +1,9 @@
 import { StatusBadge } from "./StatusBadge";
+import { AgentMemoryView } from "./AgentMemoryView";
+import { useState } from "react";
+import { Brain, BookOpen } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Agent {
   id: string;
@@ -25,6 +30,20 @@ const statusDot: Record<string, string> = {
 };
 
 export function AgentCard({ agent, compact, onStatusChange, onAssignTask }: AgentCardProps) {
+  const [showMemory, setShowMemory] = useState(false);
+  const [researching, setResearching] = useState(false);
+
+  const triggerResearch = async () => {
+    setResearching(true);
+    try {
+      await supabase.functions.invoke("agent-research", { body: { agent_id: agent.id } });
+      toast.success(`${agent.name} completed a research session`);
+    } catch {
+      toast.error("Research failed");
+    }
+    setResearching(false);
+  };
+
   return (
     <div className="rounded-lg border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -60,12 +79,37 @@ export function AgentCard({ agent, compact, onStatusChange, onAssignTask }: Agen
       </div>
 
       {!compact && onAssignTask && (
-        <button
-          onClick={() => onAssignTask(agent.id)}
-          className="w-full mt-1 text-xs rounded bg-primary/10 text-primary py-1.5 hover:bg-primary/20"
-        >
-          Assign Task
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onAssignTask(agent.id)}
+            className="flex-1 text-xs rounded bg-primary/10 text-primary py-1.5 hover:bg-primary/20"
+          >
+            Assign Task
+          </button>
+          <button
+            onClick={() => setShowMemory(!showMemory)}
+            className="text-xs rounded bg-muted px-2.5 py-1.5 hover:bg-muted/80 flex items-center gap-1"
+          >
+            <Brain className="h-3 w-3" />
+            Memory
+          </button>
+          {agent.status === "idle" && (
+            <button
+              onClick={triggerResearch}
+              disabled={researching}
+              className="text-xs rounded bg-muted px-2.5 py-1.5 hover:bg-muted/80 flex items-center gap-1 disabled:opacity-50"
+            >
+              <BookOpen className="h-3 w-3" />
+              {researching ? "..." : "Research"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {showMemory && (
+        <div className="pt-2 border-t border-border/50">
+          <AgentMemoryView agentId={agent.id} agentName={agent.name} />
+        </div>
       )}
     </div>
   );
