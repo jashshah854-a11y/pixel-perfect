@@ -206,10 +206,13 @@ export default function OfficePage() {
             </div>
           ) : null}
 
-          {/* Chat panel at bottom — compact, integrated */}
+          {/* Bottom panel: Overview + Chat */}
           {agents && (
-            <div className="shrink-0">
-              <OfficeChat agents={agents} />
+            <div className="shrink-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
+              <OfficeOverview />
+              <div className="md:w-72">
+                <OfficeChat agents={agents} />
+              </div>
             </div>
           )}
         </div>
