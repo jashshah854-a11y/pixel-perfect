@@ -49,6 +49,9 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       // Set scene ref for ticker
       setSceneRef(scene);
 
+      // Init Hivemind swarm system
+      initSwarm(scene, app.stage);
+
       // Set canvas height and force PixiJS renderer resize
       const h = getSceneHeight() + 40;
       setCanvasHeight(h);
