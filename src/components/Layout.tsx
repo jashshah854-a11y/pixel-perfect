@@ -1,6 +1,6 @@
-import { ReactNode, useState, useRef, useEffect } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Building2, Bot, ListTodo, FileText, Inbox, Volume2, VolumeX, PanelLeftOpen } from "lucide-react";
+import { Building2, Bot, ListTodo, FileText, Inbox, Volume2, VolumeX, ChevronLeft, ChevronRight } from "lucide-react";
 import { isMuted, setMuted } from "@/lib/sounds";
 
 const navItems = [
@@ -20,9 +20,7 @@ interface LayoutProps {
 export function Layout({ children, totalTokens = 0, unreadCount = 0 }: LayoutProps) {
   const location = useLocation();
   const [soundOff, setSoundOff] = useState(isMuted());
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const toggleSound = () => {
     const next = !soundOff;
@@ -30,61 +28,56 @@ export function Layout({ children, totalTokens = 0, unreadCount = 0 }: LayoutPro
     setMuted(next);
   };
 
-  // Close sidebar when clicking outside
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (
-        sidebarOpen &&
-        sidebarRef.current &&
-        !sidebarRef.current.contains(e.target as Node) &&
-        triggerRef.current &&
-        !triggerRef.current.contains(e.target as Node)
-      ) {
-        setSidebarOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [sidebarOpen]);
-
   return (
-    <div className="min-h-screen flex flex-col md:flex-row relative">
-      {/* Hover trigger zone — left edge */}
-      <div
-        ref={triggerRef}
-        className="hidden md:block fixed left-0 top-0 bottom-0 w-4 z-50"
-        onMouseEnter={() => setSidebarOpen(true)}
-      />
-
-      {/* Slide-out sidebar */}
+    <div className="min-h-screen flex flex-col md:flex-row w-full">
+      {/* Desktop sidebar — always visible */}
       <aside
-        ref={sidebarRef}
-        className={`hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-52 flex-col border-r bg-sidebar-background/95 backdrop-blur-sm shadow-xl transition-transform duration-300 ease-in-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`hidden md:flex flex-col shrink-0 border-r bg-card/50 backdrop-blur-sm transition-[width] duration-300 ease-in-out ${
+          expanded ? "w-52" : "w-[60px]"
         }`}
-        onMouseLeave={() => setSidebarOpen(false)}
+        style={{ minHeight: "100vh", position: "sticky", top: 0 }}
       >
-        <div className="p-4 border-b border-sidebar-border">
-          <h1 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">Agent Office</h1>
+        {/* Header */}
+        <div className={`flex items-center border-b border-border/30 h-12 ${expanded ? "px-4 justify-between" : "justify-center"}`}>
+          {expanded && (
+            <h1 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground whitespace-nowrap">
+              Agent Office
+            </h1>
+          )}
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+            title={expanded ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            {expanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+
+        {/* Navigation */}
+        <nav className="flex-1 py-3 px-2 space-y-1">
           {navItems.map((item) => {
             const active = location.pathname === item.path;
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors ${
+                title={expanded ? undefined : item.label}
+                className={`flex items-center gap-3 rounded-lg transition-colors ${
+                  expanded ? "px-3 py-2.5" : "justify-center px-0 py-2.5"
+                } ${
                   active
-                    ? "bg-sidebar-accent text-primary font-medium"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                 }`}
               >
-                <item.icon className="h-4 w-4" />
-                {item.label}
+                <item.icon className="h-[18px] w-[18px] shrink-0" />
+                {expanded && (
+                  <span className="text-sm whitespace-nowrap">{item.label}</span>
+                )}
                 {item.label === "Inbox" && unreadCount > 0 && (
-                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
+                  <span className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1 ${
+                    expanded ? "ml-auto" : "absolute -mt-4 ml-3"
+                  }`}>
                     {unreadCount}
                   </span>
                 )}
@@ -92,32 +85,32 @@ export function Layout({ children, totalTokens = 0, unreadCount = 0 }: LayoutPro
             );
           })}
         </nav>
-        <div className="p-4 border-t border-sidebar-border flex items-center justify-between">
-          <p className="text-xs text-muted-foreground font-mono">{totalTokens.toLocaleString()} tokens</p>
+
+        {/* Footer */}
+        <div className={`border-t border-border/30 py-3 px-2 space-y-2 ${expanded ? "" : "flex flex-col items-center"}`}>
+          {expanded && (
+            <p className="text-[10px] text-muted-foreground font-mono px-1">{totalTokens.toLocaleString()} tokens</p>
+          )}
           <button
             onClick={toggleSound}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 transition-colors"
+            className={`p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors ${
+              expanded ? "" : ""
+            }`}
             title={soundOff ? "Unmute sounds" : "Mute sounds"}
           >
-            {soundOff ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+            {soundOff ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
         </div>
       </aside>
-
-      {/* Sidebar toggle button — always visible on desktop */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="hidden md:flex fixed top-3 left-3 z-30 p-2 rounded-md bg-card/80 backdrop-blur-sm border border-border/30 text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
-        title="Toggle navigation"
-      >
-        <PanelLeftOpen className="h-4 w-4" />
-      </button>
 
       {/* Mobile header */}
       <header className="sticky top-0 z-30 flex md:hidden h-12 items-center justify-between border-b bg-background px-4">
         <h1 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">Agent Office</h1>
         <div className="flex items-center gap-3">
           <span className="text-xs font-mono text-muted-foreground">{totalTokens.toLocaleString()}</span>
+          <button onClick={toggleSound} className="p-1 text-muted-foreground">
+            {soundOff ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
           <Link to="/inbox" className="relative">
             <Inbox className="h-4 w-4 text-muted-foreground" />
             {unreadCount > 0 && (
