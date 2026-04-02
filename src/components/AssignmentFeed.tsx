@@ -176,8 +176,9 @@ export function AssignmentFeed({ agentMap, taskMap }: AssignmentFeedProps) {
 
   if ((assignments || []).length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-        No assignments yet. Create a task and watch agents claim it automatically.
+      <div className="empty-state">
+        <p className="text-sm text-muted-foreground">No assignments yet.</p>
+        <p className="text-xs text-muted-foreground/60 mt-1">Create a task and watch agents claim it automatically.</p>
       </div>
     );
   }
