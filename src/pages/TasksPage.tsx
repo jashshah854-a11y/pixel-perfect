@@ -132,6 +132,16 @@ export default function TasksPage() {
         )}
       </div>
 
+        {/* Assignment Feed */}
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-medium">Assignment Log</h3>
+          </div>
+          <AssignmentFeed agentMap={agentMap} taskMap={taskMap} />
+        </div>
+      </div>
+
       <TaskForm
         open={formOpen}
         onClose={() => setFormOpen(false)}
