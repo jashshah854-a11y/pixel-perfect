@@ -107,6 +107,7 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       const detail = (e as CustomEvent).detail;
       if (detail?.agentId && detail?.taskTitle) {
         triggerClaimNotification(detail.agentId, detail.taskTitle);
+        playClaimChime();
       }
     };
 
