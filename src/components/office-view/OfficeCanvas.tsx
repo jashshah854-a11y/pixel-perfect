@@ -91,6 +91,19 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
     };
 
     init();
+
+    // Listen for swarm dispatch events
+    const handleSwarm = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.targetRoom && detail?.taskTitle) {
+        dispatchSwarm(detail.targetRoom, detail.taskTitle, detail.intensity || 2);
+      }
+    };
+    window.addEventListener("hivemind-dispatch", handleSwarm);
+
+    return () => {
+      window.removeEventListener("hivemind-dispatch", handleSwarm);
+    };
   }, [app, agents, onAgentClick]);
 
   // Animation ticker
