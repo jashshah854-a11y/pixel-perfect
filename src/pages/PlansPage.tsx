@@ -148,8 +148,6 @@ export default function PlansPage() {
             </Button>
           </div>
         </div>
-          </Button>
-        </div>
 
         {isLoading ? (
           <div className="space-y-3">
