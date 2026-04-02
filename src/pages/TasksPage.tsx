@@ -134,6 +134,7 @@ export default function TasksPage() {
       const task = tasks?.find(t => t.id === dragTaskId);
       if (task && task.status !== columnKey) {
         updateTaskStatus.mutate({ taskId: dragTaskId, status: columnKey });
+        playDropConfirm();
         toast.success(`Task moved to ${columns.find(c => c.key === columnKey)?.label}`);
       }
     }

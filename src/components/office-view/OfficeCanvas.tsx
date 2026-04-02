@@ -4,6 +4,7 @@ import { buildScene, getSceneHeight, type AgentSprite } from "./officeScene";
 import { animateScene, resetTick, registerClock, keyState, setSceneRef, setParticleGraphics, triggerClaimNotification } from "./officeTicker";
 import { initSwarm, updateSwarm, resetSwarm, dispatchSwarm } from "./hivemindSwarm";
 import { Graphics } from "pixi.js";
+import { playSpawnPulse, playClaimChime } from "@/lib/sounds";
 
 interface Agent {
   id: string;
