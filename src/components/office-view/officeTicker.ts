@@ -26,6 +26,20 @@ const clockContainers: { hands: Graphics }[] = [];
 // === Scene references ===
 let sceneRef: SceneResult | null = null;
 
+// === Claim notification system ===
+interface ClaimNotification {
+  agentId: string;
+  taskTitle: string;
+  timer: number;     // ticks remaining
+  container: Container | null;
+}
+
+const pendingClaims: ClaimNotification[] = [];
+
+export function triggerClaimNotification(agentId: string, taskTitle: string) {
+  pendingClaims.push({ agentId, taskTitle, timer: 180, container: null }); // 3 seconds at 60fps
+}
+
 // === Idle behavior system ===
 type IdleAction = "none" | "look_left" | "look_right" | "stretch" | "shift_weight" | "lean_back" | "nod";
 
