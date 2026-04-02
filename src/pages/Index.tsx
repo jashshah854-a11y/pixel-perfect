@@ -4,6 +4,7 @@ import { Layout } from "@/components/Layout";
 import { AgentCard } from "@/components/AgentCard";
 import { StatCard } from "@/components/StatCard";
 import { InboxMessage } from "@/components/InboxMessage";
+import { ResearchFeed } from "@/components/ResearchFeed";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { RefreshCw, Plug } from "lucide-react";
