@@ -729,18 +729,21 @@ export function drawWallClock(x: number, y: number): Container {
   c.position.set(x, y);
   c.label = "wall-clock";
 
-  const g = new Graphics();
-  g.circle(0, 0, 8);
-  g.fill({ color: 0x0c0c10, alpha: 0.9 });
-  g.stroke({ color: 0x3b82f6, width: 0.5, alpha: 0.3 });
+  const face = new Graphics();
+  face.circle(0, 0, 8);
+  face.fill({ color: 0x0c0c10, alpha: 0.9 });
+  face.stroke({ color: 0x3b82f6, width: 0.5, alpha: 0.3 });
+  c.addChild(face);
+
+  const ticks = new Graphics();
   for (let i = 0; i < 12; i++) {
     const angle = (i * Math.PI * 2) / 12 - Math.PI / 2;
     const len = i % 3 === 0 ? 5 : 5.5;
-    g.moveTo(Math.cos(angle) * len, Math.sin(angle) * len);
-    g.lineTo(Math.cos(angle) * 7, Math.sin(angle) * 7);
-    g.stroke({ width: i % 3 === 0 ? 0.8 : 0.3, color: 0x3b82f6, alpha: 0.4 });
+    ticks.moveTo(Math.cos(angle) * len, Math.sin(angle) * len);
+    ticks.lineTo(Math.cos(angle) * 7, Math.sin(angle) * 7);
+    ticks.stroke({ width: i % 3 === 0 ? 0.8 : 0.3, color: 0x3b82f6, alpha: 0.4 });
   }
-  c.addChild(g);
+  c.addChild(ticks);
 
   const hands = new Graphics();
   hands.label = "clock-hands";
