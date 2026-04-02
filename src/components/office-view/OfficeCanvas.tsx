@@ -27,9 +27,10 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
 
   // Build scene when app or agents change
   useEffect(() => {
-    if (!app) return;
+    if (!app || !app.stage) return;
 
     const init = () => {
+      if (!app.stage) return;
       app.stage.removeChildren();
       resetTick();
 
