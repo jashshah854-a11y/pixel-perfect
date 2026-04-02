@@ -234,7 +234,7 @@ export function drawAgent(
   }
 
   // Pixel art sprite
-  const sprite = Sprite.from(`/sprites/${spriteNum}-D-1.png`);
+  const sprite = Sprite.from(`https://raw.githubusercontent.com/jashshah854-a11y/pixel-perfect/main/public/sprites/${spriteNum}-D-1.png`);
   sprite.anchor.set(0.5, 0);
   sprite.width = SPRITE_H;
   sprite.height = SPRITE_H;
