@@ -136,7 +136,7 @@ export default function OfficePage() {
 
         {/* Collapsible Panel */}
         {activePanel !== "none" && agents && (
-          <div className="rounded-lg border border-border/40 bg-card/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="panel enter-fade">
             {activePanel === "health" && <SystemHealthPanel />}
             {activePanel === "executive" && <ExecutiveSummary />}
             {activePanel === "knowledge" && <KnowledgeLog agents={agents} />}
