@@ -2,6 +2,7 @@ import { Container } from "pixi.js";
 import {
   drawRoom, drawDesk, drawAgent, drawChair, drawWallClock,
   drawCEO, drawCollabTable, drawHallway, drawBreakRoom, drawBed,
+  drawWhiteboard, drawFilingCabinet, drawDeskLamp, drawRug,
   DESK_W, DESK_H, getAgentColor,
 } from "./officeDrawing";
 
@@ -98,6 +99,10 @@ export function buildScene(
   ceoRoom.position.set(EDGE_PAD, cursorY);
   root.addChild(ceoRoom);
 
+  // Rug under collab table
+  const rug = drawRug(fullW / 2, CEO_OFFICE_H / 2 + 14, 90, 30, 0xf59e0b);
+  ceoRoom.addChild(rug);
+
   // Collab table
   const collabTable = drawCollabTable(fullW / 2, CEO_OFFICE_H / 2 + 10);
   ceoRoom.addChild(collabTable);
@@ -174,6 +179,16 @@ export function buildScene(
     const clock = drawWallClock(clampedRoomW - 24, 15);
     room.addChild(clock);
 
+    // Whiteboard in top-right area
+    const wb = drawWhiteboard(clampedRoomW - 40, 28);
+    room.addChild(wb);
+
+    // Filing cabinet in even-indexed rooms
+    if (idx % 2 === 0) {
+      const fc = drawFilingCabinet(clampedRoomW - 18, rh - 28);
+      room.addChild(fc);
+    }
+
     const deptAgents = byDept[dept.name] || [];
     const perRow = slotsPerRow(clampedRoomW);
 
@@ -189,6 +204,12 @@ export function buildScene(
 
       const desk = drawDesk(deskX, deskY);
       room.addChild(desk);
+
+      // Desk lamp on every other desk
+      if (ai % 2 === 0) {
+        const lamp = drawDeskLamp(deskX + DESK_W - 6, deskY - 2);
+        room.addChild(lamp);
+      }
 
       // Track mug world position (mug is at DESK_W - 14, DESK_H - 14 relative to desk)
       mugPositions.push({
