@@ -1,128 +1,129 @@
 
 
-# CEO Command Center Redesign
+# Predictive Intelligence & Autonomous Command Center
 
-This is a large, coordinated transformation spanning scene layout, navigation, task assignment, orchestration flow, inbox control, and a knowledge/learning dashboard. Here is the implementation plan.
-
----
-
-## 1. Navigation Overhaul
-
-**Sidebar becomes collapsible slide-out panel:**
-- Replace the static `<aside>` in `Layout.tsx` with a hover-activated slide-out panel using absolute positioning
-- Hidden by default (width: 0), expands on mouse enter near left edge (within 16px) or a small trigger icon
-- Smooth CSS transition (300ms ease)
-- Swap nav order: Office, **Tasks** (second), Agents, Plans, Inbox
-
-**Files:** `src/components/Layout.tsx`
+A six-phase system evolution adding prediction, simulation, autonomy, external integrations, continuous learning, and executive visibility.
 
 ---
 
-## 2. Office Scene Spatial Redesign
+## Phase 1: Predictive Intelligence — Suggestions Engine
 
-Rework `officeScene.ts` to restructure the CEO War Room into three distinct zones:
+**New edge function: `supabase/functions/generate-suggestions/index.ts`**
+- Queries recent tasks, agent workloads, blocked items, completion patterns, and agent_memory
+- Uses Lovable AI (gemini-3-flash-preview) to analyze system state and generate 3-5 actionable suggestions
+- Each suggestion includes: type (next_task | optimization | reassignment | risk | efficiency), title, description, confidence, and affected agents
+- Returns structured output via tool calling
 
-```text
-┌─────────────────────────────────────────────────┐
-│ CEO WAR ROOM                                    │
-│ ┌──────────┐  ┌─────────────────────┐  ┌──────┐│
-│ │ Personal │  │   Central Meeting   │  │Quick ││
-│ │ CEO      │  │   Table (large,     │  │Assign││
-│ │ Office   │  │   clear purpose)    │  │Panel ││
-│ │ (left)   │  │   with chairs       │  │      ││
-│ └──────────┘  └─────────────────────┘  └──────┘│
-│ [Multi-monitor wall]  [Activity indicators]     │
-└─────────────────────────────────────────────────┘
-```
+**New component: `src/components/PredictivePanel.tsx`**
+- Fetches suggestions on mount and every 60s via polling
+- Displays suggestions as prioritized cards with type-specific icons and color coding
+- Each suggestion has an "Act" button that either creates a task, reassigns work, or navigates to relevant page
+- Integrated into OfficePage as a new overlay panel option ("Predict" button alongside Health/Summary/Knowledge)
 
-- **Left zone (25% width):** CEO avatar, personal desk with monitors, golden rug — the "personal office"
-- **Center zone (50% width):** Large conference table with 8 chairs, overhead lighting, whiteboard — clear "meeting/collaboration space"
-- **Right zone (25% width):** Quick task assignment panel (drawn as a command console with inline task creation)
-- Increase `CEO_OFFICE_H` from 240 to ~360 for more presence
-- Add ambient elements: holographic displays, status boards, data feeds to make it feel active
-
-**Neural Lounge clarity:** Rename to "NEURAL LOUNGE — REST & RECHARGE", add sleeping pods alongside sofas, dim the lighting tint, add "zen" ambient particles. This makes it clearly a rest/recovery space.
-
-**Files:** `src/components/office-view/officeScene.ts`, `src/components/office-view/officeDrawing.ts`
+**Database**: New `system_suggestions` table to persist and track acted-upon suggestions (migration).
 
 ---
 
-## 3. Department Room Click-to-Enter Interaction
+## Phase 2: Outcome Simulation Engine
 
-Add click handlers on department room containers so clicking a room zooms/scrolls the canvas to that room. This removes the "can't access workspaces" limitation.
+**Upgrade `src/components/PlanPreview.tsx`**
+- Add three outcome scenarios: best/expected/worst case
+- For each scenario, calculate:
+  - Estimated completion time based on agent workload counts
+  - Risk score based on blocked task history and agent availability
+  - Hivemind need assessment (if any agent is overloaded, flag Hivemind support)
+- Show workload distribution bar chart per agent
+- Show potential delay points (agents with 2+ active tasks)
+- All computed from real DB state (tasks, assignments, agent status)
 
-- Each room becomes clickable (already has `eventMode` potential)
-- On click, smooth scroll the container div to that room's Y position
-- Add a visual hover effect (brighter border glow) on room hover
-- Add a "Back to CEO" button overlay when scrolled to a department
-
-**Files:** `src/components/office-view/OfficeCanvas.tsx`, `src/components/office-view/officeScene.ts`
-
----
-
-## 4. In-Office Task Assignment
-
-Add a React overlay panel on the right side of the Office page (not in PixiJS) for quick task creation and assignment without leaving the Office.
-
-- Small floating panel with: title input, priority selector, "Assign" button
-- On submit: creates task in DB, calls `assign-task` edge function, triggers claim animation + Hivemind dispatch
-- Panel is collapsible, toggled via a button in the Office header
-
-**Files:** `src/pages/OfficePage.tsx` (new `QuickTaskPanel` component inline or separate file)
+**New function in PlanPreview**: `simulateOutcomes()` that takes current system state and returns three scenario objects with metrics.
 
 ---
 
-## 5. Omega Orchestrator Flow
+## Phase 3: Autonomous Execution Mode
 
-Modify the plan submission flow so plans are routed through Omega:
+**New edge function: `supabase/functions/autonomous-tick/index.ts`**
+- Runs when triggered (via UI button or interval)
+- Omega generates plans from queued/unaddressed system needs using Lovable AI
+- Checks for idle agents and unassigned tasks, auto-routes them
+- Dispatches Hivemind sub-agents when workload exceeds threshold
+- All actions logged to `autonomous_actions` table
 
-- Update `decompose-plan/index.ts` to explicitly assign the coordination task to Omega (agent with role containing "orchestrat" or name "omega")
-- Omega gets `owner` role on the coordination subtask; other subtasks get assigned to best-fit agents as before
-- Add inbox notification: "Omega received your plan and is distributing work"
-- On the Plans page, show "Sent to Omega for orchestration" status badge after submission
+**Database migration**: New `autonomous_actions` table (id, action_type, description, agent_id, task_id, created_at, approved boolean)
 
-**Files:** `supabase/functions/decompose-plan/index.ts`, `src/pages/PlansPage.tsx`
+**New component: `src/components/AutonomousControl.tsx`**
+- Toggle switch for autonomous mode (stored in localStorage)
+- When enabled, triggers `autonomous-tick` every 90s
+- Shows live log of autonomous decisions
+- "Override" button to pause and review pending actions
+- Guardrails: max 3 autonomous task creations per tick, no deletion, scope limited to task creation/assignment/Hivemind dispatch
 
----
-
-## 6. Inbox Clear All
-
-Add a "Clear All" button to InboxPage that deletes all inbox messages (with confirmation dialog).
-
-- Migration: Add DELETE RLS policy on inbox table (`true` for public)
-- Button with `AlertDialog` confirmation: "This will permanently remove all messages. Continue?"
-- On confirm: `supabase.from("inbox").delete().neq("id", "")`
-
-**Files:** `src/pages/InboxPage.tsx`, new migration for DELETE policy
+**Integration**: Added to OfficePage as a floating control in the header bar.
 
 ---
 
-## 7. Learning & Knowledge Log
+## Phase 4: Real-World Integration Layer
 
-Create a new `KnowledgeLog` component accessible from the Office page (as a slide-out panel or tab):
+**New edge function: `supabase/functions/agent-action/index.ts`**
+- Modular action executor supporting: email (via Lovable email if domain configured), webhook triggers, document logging
+- Each action type is a handler within the function
+- All actions logged to `external_actions` table with full audit trail
 
-- Query `tasks` table (completed), join with `task_assignments` and `agent_memory`
-- Display as expandable cards:
-  - Task title, completion date, assigned agent name, priority badge
-  - Expandable detail: description, agent reasoning from `task_assignments.reasoning`, memories learned from `agent_memory` linked via `source_task_id`
-- Filter by agent, date range, task type
-- Summary stats at top: total completed, total memories, avg confidence
+**Database migration**: New `external_actions` table (id, agent_id, task_id, action_type, target, payload, result, status, created_at)
 
-**Files:** New `src/components/KnowledgeLog.tsx`, integrate into `src/pages/OfficePage.tsx`
+**UI: Action log in SystemHealthPanel**
+- New section showing recent external actions with status indicators
+- Expandable to see payload and result
+
+**Initial integrations**:
+- Webhook trigger (POST to configured URL)
+- Internal document logging (stores structured notes in agent_memory)
+- Email notification (if email domain is configured)
+
+---
+
+## Phase 5: Continuous Learning & Adaptation
+
+**Upgrade `assign-task` edge function**:
+- After scoring, check `system_suggestions` for previously acted-upon suggestions that match the current task pattern
+- Boost agents whose past predictions were correct (track prediction accuracy in agent_memory)
+- Add a `prediction_accuracy` field to agent scoring
+
+**Upgrade `generate-suggestions` edge function**:
+- Include feedback loop: when a suggestion is acted on, track outcome
+- Weight future suggestions by historical accuracy
+- Surface "learning improvements" in the suggestions (e.g., "Prism's UI accuracy improved 15% this week")
+
+**New section in KnowledgeLog**: "Learning Trajectory" showing per-agent confidence evolution over time as a simple sparkline or trend indicator.
+
+---
+
+## Phase 6: Executive Visibility Layer
+
+**Upgrade `src/components/ExecutiveSummary.tsx`**:
+- Add "Predicted Next Steps" section pulling from suggestions engine
+- Add "Autonomous Actions" section showing recent auto-decisions
+- Add "System Risks" section computed from blocked tasks, overloaded agents, and failed external actions
+- Add "Learning Progress" row showing agent memory growth trend
 
 ---
 
 ## Technical Summary
 
-| Area | Files Modified | New Files |
-|------|---------------|-----------|
-| Navigation | `Layout.tsx` | — |
-| Scene layout | `officeScene.ts`, `officeDrawing.ts` | — |
-| Room interaction | `OfficeCanvas.tsx` | — |
-| Quick assign | `OfficePage.tsx` | `QuickTaskPanel.tsx` |
-| Omega orchestrator | `decompose-plan/index.ts`, `PlansPage.tsx` | — |
-| Inbox clear | `InboxPage.tsx` | Migration |
-| Knowledge log | `OfficePage.tsx` | `KnowledgeLog.tsx` |
+| Component | Files | Type |
+|-----------|-------|------|
+| Suggestions engine | `generate-suggestions/index.ts`, `PredictivePanel.tsx` | Edge function + component |
+| Outcome simulation | `PlanPreview.tsx` upgrade | Component |
+| Autonomous mode | `autonomous-tick/index.ts`, `AutonomousControl.tsx` | Edge function + component |
+| External actions | `agent-action/index.ts` | Edge function |
+| Learning adaptation | `assign-task/index.ts` upgrade, `generate-suggestions` upgrade | Edge function |
+| Executive upgrade | `ExecutiveSummary.tsx` upgrade | Component |
+| OfficePage integration | `OfficePage.tsx` | Component |
 
-**Migration needed:** DELETE policy on `inbox` table.
+**Migrations needed**:
+1. `system_suggestions` table (type, title, description, confidence, status, acted_at, created_at)
+2. `autonomous_actions` table (action_type, description, agent_id, task_id, approved, created_at)
+3. `external_actions` table (agent_id, task_id, action_type, target, payload, result, status, created_at)
+
+All three tables with public SELECT/INSERT RLS policies.
 
