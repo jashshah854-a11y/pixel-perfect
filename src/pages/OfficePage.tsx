@@ -10,7 +10,9 @@ import { ExecutiveSummary } from "@/components/ExecutiveSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
-import { Zap, Brain, X, Activity, Shield, ChevronDown, ChevronUp } from "lucide-react";
+import { Zap, Brain, X, Activity, Shield, Lightbulb, Bot } from "lucide-react";
+import { PredictivePanel } from "@/components/PredictivePanel";
+import { AutonomousControl } from "@/components/AutonomousControl";
 
 interface SelectedAgent {
   agent: {
