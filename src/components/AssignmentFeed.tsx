@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Users, Eye, Zap, Filter, Clock, CheckCircle2, ArrowRight } from "lucide-react";
+import { Users, Eye, Zap, Filter, Clock, ArrowRight } from "lucide-react";
 
 interface Assignment {
   id: string;
