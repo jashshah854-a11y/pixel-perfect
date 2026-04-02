@@ -28,7 +28,7 @@ interface SelectedAgent {
   y: number;
 }
 
-type OverlayPanel = "none" | "health" | "executive" | "knowledge";
+type OverlayPanel = "none" | "health" | "executive" | "knowledge" | "predict" | "autonomous";
 
 export default function OfficePage() {
   const [selected, setSelected] = useState<SelectedAgent | null>(null);
