@@ -17,7 +17,18 @@ const DEPT_KEYWORDS: Record<string, string[]> = {
   backend:       ["api", "server", "endpoint", "function", "database", "query", "storage", "deploy", "edge", "webhook", "backend"],
 };
 
-function scoreAgent(agent: { department: string; role: string; status: string }, taskText: string): { score: number; reasons: string[] } {
+interface MemoryEntry {
+  content: string;
+  confidence: number;
+  tags: string[];
+  memory_type: string;
+}
+
+function scoreAgent(
+  agent: { department: string; role: string; status: string },
+  taskText: string,
+  memories: MemoryEntry[]
+): { score: number; reasons: string[] } {
   const text = taskText.toLowerCase();
   const dept = agent.department.toLowerCase();
   const keywords = DEPT_KEYWORDS[dept] || [];
@@ -49,7 +60,32 @@ function scoreAgent(agent: { department: string; role: string; status: string },
     reasons.push("Currently busy, lower priority");
   }
 
-  // Base competency - every agent gets a small score
+  // === Memory-aware scoring (up to 25 bonus points) ===
+  if (memories.length > 0) {
+    const taskWords = text.split(/\s+/).filter(w => w.length > 3);
+    let memoryScore = 0;
+    let bestMemory = "";
+
+    for (const mem of memories) {
+      const memWords = mem.content.toLowerCase().split(/\s+/);
+      const tagOverlap = (mem.tags || []).filter(t => text.includes(t.toLowerCase())).length;
+      const contentOverlap = taskWords.filter(w => memWords.includes(w)).length;
+      const relevance = (tagOverlap * 3 + contentOverlap) * mem.confidence;
+
+      if (relevance > memoryScore) {
+        memoryScore = relevance;
+        bestMemory = mem.content.slice(0, 50);
+      }
+    }
+
+    const memBonus = Math.min(Math.round(memoryScore * 5), 25);
+    if (memBonus > 0) {
+      score += memBonus;
+      reasons.push(`Memory boost +${memBonus}: "${bestMemory}..."`);
+    }
+  }
+
+  // Base competency
   score += 5;
 
   return { score: Math.min(score, 100), reasons };
@@ -67,21 +103,31 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Load task and agents
-    const [taskRes, agentsRes] = await Promise.all([
+    // Load task, agents, and all agent memories
+    const [taskRes, agentsRes, memoriesRes] = await Promise.all([
       supabase.from('tasks').select('*').eq('id', task_id).single(),
       supabase.from('agents').select('*'),
+      supabase.from('agent_memory').select('agent_id, content, confidence, tags, memory_type').order('confidence', { ascending: false }).limit(200),
     ]);
 
     if (!taskRes.data) throw new Error("Task not found");
     const task = taskRes.data;
     const agents = agentsRes.data || [];
+    const allMemories = memoriesRes.data || [];
+
+    // Group memories by agent
+    const memByAgent: Record<string, MemoryEntry[]> = {};
+    for (const m of allMemories) {
+      if (!memByAgent[m.agent_id]) memByAgent[m.agent_id] = [];
+      memByAgent[m.agent_id].push(m);
+    }
 
     const taskText = `${task.title} ${task.description || ""}`;
 
-    // Score all agents
+    // Score all agents with memory awareness
     const scored = agents.map(agent => {
-      const { score, reasons } = scoreAgent(agent, taskText);
+      const agentMemories = memByAgent[agent.id] || [];
+      const { score, reasons } = scoreAgent(agent, taskText, agentMemories);
       return { agent, score, reasons };
     }).sort((a, b) => b.score - a.score);
 
@@ -107,25 +153,36 @@ serve(async (req) => {
     const owner = assignments.find(a => a.role === "owner");
 
     if (owner) {
-      // Update task: assign to owner and set in_progress
       await supabase.from('tasks').update({
         assigned_to: owner.agent_id,
         status: 'in_progress',
       }).eq('id', task_id);
 
-      // Update owner agent status
       await supabase.from('agents').update({
         status: 'working',
         current_task: task.title,
         last_active: new Date().toISOString(),
       }).eq('id', owner.agent_id);
 
-      // Send inbox notification
       await supabase.from('inbox').insert({
         from_agent: owner.agent_id,
         message: `Claimed task: "${task.title}" (fit score: ${owner.fit_score}/100)`,
         type: 'task_claim',
       });
+
+      // Create collaboration records for support agents
+      const supporters = assignments.filter(a => a.role === "support");
+      if (supporters.length > 0) {
+        const collabs = supporters.map(s => ({
+          task_id,
+          from_agent: s.agent_id,
+          to_agent: owner.agent_id,
+          collab_type: 'task_support',
+          message: `Supporting "${task.title}" (fit: ${s.fit_score})`,
+          status: 'in_progress',
+        }));
+        await supabase.from('agent_collaborations').insert(collabs);
+      }
     }
 
     return new Response(JSON.stringify({ 
