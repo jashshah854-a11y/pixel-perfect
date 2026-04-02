@@ -1,0 +1,1 @@
+UPDATE tool_connections SET status = 'active' WHERE id = 'gemini-2';
