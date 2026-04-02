@@ -149,6 +149,72 @@ export type Database = {
         }
         Relationships: []
       }
+      autonomous_actions: {
+        Row: {
+          action_type: string
+          agent_id: string | null
+          approved: boolean
+          created_at: string
+          description: string
+          id: string
+          task_id: string | null
+        }
+        Insert: {
+          action_type: string
+          agent_id?: string | null
+          approved?: boolean
+          created_at?: string
+          description: string
+          id?: string
+          task_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          agent_id?: string | null
+          approved?: boolean
+          created_at?: string
+          description?: string
+          id?: string
+          task_id?: string | null
+        }
+        Relationships: []
+      }
+      external_actions: {
+        Row: {
+          action_type: string
+          agent_id: string
+          created_at: string
+          id: string
+          payload: Json | null
+          result: Json | null
+          status: string
+          target: string | null
+          task_id: string | null
+        }
+        Insert: {
+          action_type: string
+          agent_id: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          result?: Json | null
+          status?: string
+          target?: string | null
+          task_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          agent_id?: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          result?: Json | null
+          status?: string
+          target?: string | null
+          task_id?: string | null
+        }
+        Relationships: []
+      }
       inbox: {
         Row: {
           created_at: string
@@ -250,6 +316,42 @@ export type Database = {
           salary?: string | null
           swept_at?: string
           verdict?: string
+        }
+        Relationships: []
+      }
+      system_suggestions: {
+        Row: {
+          acted_at: string | null
+          affected_agents: string[] | null
+          confidence: number
+          created_at: string
+          description: string
+          id: string
+          status: string
+          title: string
+          type: string
+        }
+        Insert: {
+          acted_at?: string | null
+          affected_agents?: string[] | null
+          confidence?: number
+          created_at?: string
+          description: string
+          id?: string
+          status?: string
+          title: string
+          type?: string
+        }
+        Update: {
+          acted_at?: string | null
+          affected_agents?: string[] | null
+          confidence?: number
+          created_at?: string
+          description?: string
+          id?: string
+          status?: string
+          title?: string
+          type?: string
         }
         Relationships: []
       }
