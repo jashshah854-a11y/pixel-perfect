@@ -34,6 +34,7 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       if (!app.stage) return;
       app.stage.removeChildren();
       resetTick();
+      resetSwarm();
 
       const width = app.screen.width;
       const scene = buildScene(agents, width);
