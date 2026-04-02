@@ -130,7 +130,6 @@ export default function TasksPage() {
             })}
           </div>
         )}
-      </div>
 
         {/* Assignment Feed */}
         <div className="mt-6">
