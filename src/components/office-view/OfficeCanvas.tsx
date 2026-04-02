@@ -2,9 +2,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { useOfficePixiRuntime } from "./useOfficePixiRuntime";
 import { buildScene, getSceneHeight, type AgentSprite } from "./officeScene";
 import { animateScene, resetTick, registerClock, keyState, setSceneRef, setParticleGraphics } from "./officeTicker";
-import { Assets, Graphics } from "pixi.js";
-
-const SPRITE_URLS = Array.from({ length: 14 }, (_, i) => `/sprites/${i + 1}-D-1.png`);
+import { Graphics } from "pixi.js";
 
 interface Agent {
   id: string;
