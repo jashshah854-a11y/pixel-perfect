@@ -1,7 +1,9 @@
 import { StatusBadge } from "./StatusBadge";
 import { AgentMemoryView } from "./AgentMemoryView";
 import { useState } from "react";
-import { Brain } from "lucide-react";
+import { Brain, BookOpen } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Agent {
   id: string;
