@@ -553,15 +553,13 @@ export function drawCEO(x: number, y: number): Container {
   // --- Head ---
   const head = new Graphics();
   head.roundRect(-3, -14, 6, 6, 2);
-  head.fill(0xdbb896);
+  head.fill(0xf0c8a0);
   head.circle(0, -24, 13);
-  head.fill(0xdbb896);
-  // Hair
-  head.arc(0, -26, 13, -Math.PI, 0);
+  head.fill(0xf0c8a0);
+  // Hair — clean short style
+  head.arc(0, -24, 13.5, -Math.PI * 0.85, -Math.PI * 0.15);
   head.fill(0x1a1a2e);
-  head.ellipse(-12, -22, 3, 6);
-  head.fill(0x1a1a2e);
-  head.ellipse(12, -22, 3, 6);
+  head.roundRect(-10, -35, 20, 6, 3);
   head.fill(0x1a1a2e);
   c.addChild(head);
 
