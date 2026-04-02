@@ -724,7 +724,7 @@ export function drawCEO(x: number, y: number): Container {
   body.roundRect(-3, headY + 9, 6, 6, 2);
   body.fill(SKIN_TONE);
 
-  drawHumanoidFace(body, "working", 0x1a1a2e, headY);
+  drawHumanoidFace(body, "working", 0x1a1a2e, headY, 42);
   c.addChild(body);
 
   // Crown
