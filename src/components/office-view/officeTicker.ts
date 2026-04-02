@@ -26,6 +26,32 @@ const clockContainers: { hands: Graphics }[] = [];
 // === Scene references ===
 let sceneRef: SceneResult | null = null;
 
+// === Collaboration graph ===
+interface CollabLine {
+  fromAgentId: string;
+  toAgentId: string;
+  taskTitle: string;
+  alpha: number;
+}
+
+let collabLines: CollabLine[] = [];
+let collabGraphics: Graphics | null = null;
+
+export function setCollabGraphics(g: Graphics) {
+  collabGraphics = g;
+}
+
+export function updateCollaborations(collabs: Array<{ from_agent: string; to_agent: string; status: string; message: string }>) {
+  collabLines = collabs
+    .filter(c => c.status === "pending" || c.status === "in_progress")
+    .map(c => ({
+      fromAgentId: c.from_agent,
+      toAgentId: c.to_agent,
+      taskTitle: c.message,
+      alpha: 0.5,
+    }));
+}
+
 // === Claim notification system ===
 interface ClaimNotification {
   agentId: string;
