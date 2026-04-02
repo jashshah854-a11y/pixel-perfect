@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useOfficePixiRuntime } from "./useOfficePixiRuntime";
 import { buildScene, getSceneHeight, type AgentSprite } from "./officeScene";
-import { animateScene, resetTick, registerClock, keyState, setSceneRef, setParticleGraphics, triggerClaimNotification } from "./officeTicker";
+import { animateScene, resetTick, registerClock, keyState, setSceneRef, setParticleGraphics, triggerClaimNotification, setCollabGraphics, updateCollaborations } from "./officeTicker";
 import { initSwarm, updateSwarm, resetSwarm, dispatchSwarm } from "./hivemindSwarm";
 import { Graphics } from "pixi.js";
 
