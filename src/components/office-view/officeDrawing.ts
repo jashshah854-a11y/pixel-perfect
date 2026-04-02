@@ -191,7 +191,7 @@ export function drawChair(x: number, y: number, accentColor: number): Container 
   return c;
 }
 
-// === Agent Avatar ===
+// === Agent Avatar (Humanoid Figure) ===
 export function drawAgent(
   name: string,
   status: string,
@@ -203,55 +203,136 @@ export function drawAgent(
   c.label = `agent-${name}`;
 
   const color = getAgentColor(name);
+  const isOffline = status === "offline";
+  const baseAlpha = isOffline ? 0.35 : 1;
 
-  // Shadow
+  // Ground shadow
   const shadow = new Graphics();
-  shadow.ellipse(0, AGENT_RADIUS - 2, AGENT_RADIUS * 0.8, 4);
-  shadow.fill({ color: 0x000000, alpha: 0.15 });
+  shadow.ellipse(0, 22, 12, 4);
+  shadow.fill({ color: 0x000000, alpha: 0.18 * baseAlpha });
   c.addChild(shadow);
 
   // Aura (for working status)
   if (status === "working") {
     const aura = new Graphics();
-    aura.circle(0, 0, AGENT_RADIUS + 4);
+    aura.ellipse(0, 0, 18, 24);
     aura.fill({ color: 0x22c55e, alpha: 0.08 });
     aura.label = "agent-aura";
     c.addChild(aura);
   }
 
-  // Body circle
+  // --- Legs ---
+  const legs = new Graphics();
+  legs.alpha = baseAlpha;
+  // Left leg
+  legs.roundRect(-7, 10, 5, 14, 2);
+  legs.fill(0x1e293b);
+  // Right leg
+  legs.roundRect(2, 10, 5, 14, 2);
+  legs.fill(0x1e293b);
+  // Shoes
+  legs.roundRect(-8, 22, 7, 3, 1.5);
+  legs.fill(0x27272a);
+  legs.roundRect(1, 22, 7, 3, 1.5);
+  legs.fill(0x27272a);
+  c.addChild(legs);
+
+  // --- Body / Torso ---
   const body = new Graphics();
-  body.circle(0, 0, AGENT_RADIUS);
+  body.alpha = baseAlpha;
+  // Main torso
+  body.roundRect(-10, -8, 20, 20, 5);
   body.fill(color);
-  body.circle(-4, -5, AGENT_RADIUS * 0.6);
-  body.fill({ color: 0xffffff, alpha: 0.08 });
-  if (status === "offline") body.alpha = 0.35;
+  // Shirt highlight
+  body.roundRect(-8, -6, 16, 8, 3);
+  body.fill({ color: 0xffffff, alpha: 0.1 });
+  // Collar
+  body.moveTo(-3, -8);
+  body.lineTo(0, -5);
+  body.lineTo(3, -8);
+  body.stroke({ width: 1, color: blend(color, 0xffffff, 0.3), alpha: 0.5 });
   c.addChild(body);
 
-  // Ring
-  const ring = new Graphics();
-  ring.circle(0, 0, AGENT_RADIUS);
-  ring.stroke({ color: blend(color, 0xffffff, 0.2), width: 1.5, alpha: 0.4 });
-  if (status === "offline") ring.alpha = 0.35;
-  c.addChild(ring);
+  // --- Arms ---
+  const arms = new Graphics();
+  arms.alpha = baseAlpha;
+  // Left arm
+  arms.roundRect(-14, -6, 5, 16, 2.5);
+  arms.fill(blend(color, 0x000000, 0.15));
+  // Left hand
+  arms.circle(-11.5, 11, 3);
+  arms.fill(0xdbb896);
+  // Right arm
+  arms.roundRect(9, -6, 5, 16, 2.5);
+  arms.fill(blend(color, 0x000000, 0.15));
+  // Right hand
+  arms.circle(11.5, 11, 3);
+  arms.fill(0xdbb896);
+  c.addChild(arms);
 
-  // Initial letter
-  const initial = new Text({
-    text: name.charAt(0).toUpperCase(),
-    style: new TextStyle({
-      fontFamily: "Inter, system-ui, sans-serif",
-      fontSize: 18,
-      fontWeight: "bold",
-      fill: 0xffffff,
-    }),
-  });
-  initial.anchor.set(0.5);
-  if (status === "offline") initial.alpha = 0.35;
-  c.addChild(initial);
+  // --- Head ---
+  const head = new Graphics();
+  head.alpha = baseAlpha;
+  // Neck
+  head.roundRect(-3, -12, 6, 6, 2);
+  head.fill(0xdbb896);
+  // Head shape
+  head.circle(0, -20, 11);
+  head.fill(0xdbb896);
+  // Hair (varies by agent for personality)
+  const hairColor = blend(color, 0x000000, 0.4);
+  head.arc(0, -22, 11, -Math.PI, 0);
+  head.fill(hairColor);
+  // Side hair tufts
+  head.ellipse(-10, -18, 3, 5);
+  head.fill(hairColor);
+  head.ellipse(10, -18, 3, 5);
+  head.fill(hairColor);
+  c.addChild(head);
+
+  // --- Face ---
+  const face = new Graphics();
+  face.alpha = baseAlpha;
+  // Eyes
+  face.circle(-4, -21, 2);
+  face.fill(0xffffff);
+  face.circle(4, -21, 2);
+  face.fill(0xffffff);
+  // Pupils
+  face.circle(-3.5, -21, 1);
+  face.fill(0x1a1a2e);
+  face.circle(4.5, -21, 1);
+  face.fill(0x1a1a2e);
+  // Eye shine
+  face.circle(-3, -21.5, 0.5);
+  face.fill({ color: 0xffffff, alpha: 0.7 });
+  face.circle(5, -21.5, 0.5);
+  face.fill({ color: 0xffffff, alpha: 0.7 });
+  // Mouth
+  if (status === "working") {
+    // Smile
+    face.arc(0, -16, 3, 0.1, Math.PI - 0.1);
+    face.stroke({ width: 0.8, color: 0x8b6b52 });
+  } else if (status === "offline") {
+    // Sleeping mouth
+    face.moveTo(-2, -16);
+    face.lineTo(2, -16);
+    face.stroke({ width: 0.8, color: 0x8b6b52 });
+  } else {
+    // Neutral
+    face.arc(0, -17, 2, 0.2, Math.PI - 0.2);
+    face.stroke({ width: 0.7, color: 0x8b6b52 });
+  }
+  // Blush
+  face.ellipse(-6, -17, 2, 1.2);
+  face.fill({ color: 0xe8a0a0, alpha: 0.2 });
+  face.ellipse(6, -17, 2, 1.2);
+  face.fill({ color: 0xe8a0a0, alpha: 0.2 });
+  c.addChild(face);
 
   // Status dot
   const dot = new Graphics();
-  dot.circle(AGENT_RADIUS - 3, -AGENT_RADIUS + 3, 5);
+  dot.circle(12, -28, 4);
   dot.fill(STATUS_COLORS[status] || 0x71717a);
   dot.stroke({ color: 0x0a0a0a, width: 1.5 });
   dot.label = "status-dot";
@@ -263,19 +344,19 @@ export function drawAgent(
     style: new TextStyle({
       fontFamily: "Inter, system-ui, sans-serif",
       fontSize: 9,
-      fill: 0x71717a,
+      fill: 0xa1a1aa,
       fontWeight: "500",
     }),
   });
   label.anchor.set(0.5, 0);
-  label.position.set(0, AGENT_RADIUS + 4);
-  if (status === "offline") label.alpha = 0.35;
+  label.position.set(0, 26);
+  label.alpha = baseAlpha;
   c.addChild(label);
 
   // Make interactive
   c.eventMode = "static";
   c.cursor = "pointer";
-  c.hitArea = { contains: (px: number, py: number) => px * px + py * py <= AGENT_RADIUS * AGENT_RADIUS };
+  c.hitArea = { contains: (px: number, py: number) => px > -16 && px < 16 && py > -32 && py < 28 };
 
   return c;
 }
@@ -409,55 +490,109 @@ export function drawWallClock(x: number, y: number): Container {
   return c;
 }
 
-// === CEO Avatar ===
+// === CEO Avatar (Humanoid Figure) ===
 export function drawCEO(x: number, y: number): Container {
   const c = new Container();
   c.position.set(x, y);
   c.label = "ceo-avatar";
 
-  // Shadow
+  const ceoColor = 0xf59e0b;
+
+  // Ground shadow
   const shadow = new Graphics();
-  shadow.ellipse(0, CEO_RADIUS, CEO_RADIUS * 0.9, 5);
-  shadow.fill({ color: 0x000000, alpha: 0.2 });
+  shadow.ellipse(0, 26, 14, 5);
+  shadow.fill({ color: 0x000000, alpha: 0.22 });
   c.addChild(shadow);
 
   // Golden aura
   const aura = new Graphics();
-  aura.circle(0, 0, CEO_RADIUS + 6);
+  aura.ellipse(0, 0, 22, 30);
   aura.fill({ color: 0xf59e0b, alpha: 0.06 });
   aura.label = "ceo-aura";
   c.addChild(aura);
 
-  // Body
+  // --- Legs ---
+  const legs = new Graphics();
+  legs.roundRect(-8, 12, 6, 16, 2);
+  legs.fill(0x1e293b);
+  legs.roundRect(2, 12, 6, 16, 2);
+  legs.fill(0x1e293b);
+  legs.roundRect(-9, 26, 8, 3, 1.5);
+  legs.fill(0x1a1a2e);
+  legs.roundRect(1, 26, 8, 3, 1.5);
+  legs.fill(0x1a1a2e);
+  c.addChild(legs);
+
+  // --- Body ---
   const body = new Graphics();
-  body.circle(0, 0, CEO_RADIUS);
-  body.fill(0xf59e0b);
-  body.circle(-5, -6, CEO_RADIUS * 0.5);
+  body.roundRect(-12, -10, 24, 24, 6);
+  body.fill(ceoColor);
+  // Suit lapels
+  body.roundRect(-10, -8, 20, 10, 3);
   body.fill({ color: 0xffffff, alpha: 0.1 });
+  // Tie
+  body.moveTo(0, -8);
+  body.lineTo(-2, -2);
+  body.lineTo(0, 2);
+  body.lineTo(2, -2);
+  body.closePath();
+  body.fill(0xef4444);
   c.addChild(body);
 
-  // Ring
-  const ring = new Graphics();
-  ring.circle(0, 0, CEO_RADIUS);
-  ring.stroke({ color: 0xfbbf24, width: 2, alpha: 0.5 });
-  c.addChild(ring);
+  // --- Arms ---
+  const arms = new Graphics();
+  arms.roundRect(-16, -8, 5, 18, 2.5);
+  arms.fill(blend(ceoColor, 0x000000, 0.15));
+  arms.circle(-13.5, 11, 3.5);
+  arms.fill(0xdbb896);
+  arms.roundRect(11, -8, 5, 18, 2.5);
+  arms.fill(blend(ceoColor, 0x000000, 0.15));
+  arms.circle(13.5, 11, 3.5);
+  arms.fill(0xdbb896);
+  c.addChild(arms);
 
-  // "J" initial
-  const initial = new Text({
-    text: "J",
-    style: new TextStyle({
-      fontFamily: "Inter, system-ui, sans-serif",
-      fontSize: 24,
-      fontWeight: "bold",
-      fill: 0xffffff,
-    }),
-  });
-  initial.anchor.set(0.5);
-  c.addChild(initial);
+  // --- Head ---
+  const head = new Graphics();
+  head.roundRect(-3, -14, 6, 6, 2);
+  head.fill(0xdbb896);
+  head.circle(0, -24, 13);
+  head.fill(0xdbb896);
+  // Hair
+  head.arc(0, -26, 13, -Math.PI, 0);
+  head.fill(0x1a1a2e);
+  head.ellipse(-12, -22, 3, 6);
+  head.fill(0x1a1a2e);
+  head.ellipse(12, -22, 3, 6);
+  head.fill(0x1a1a2e);
+  c.addChild(head);
+
+  // --- Face ---
+  const face = new Graphics();
+  face.circle(-5, -25, 2.2);
+  face.fill(0xffffff);
+  face.circle(5, -25, 2.2);
+  face.fill(0xffffff);
+  face.circle(-4.5, -25, 1.2);
+  face.fill(0x1a1a2e);
+  face.circle(5.5, -25, 1.2);
+  face.fill(0x1a1a2e);
+  face.circle(-4, -25.5, 0.5);
+  face.fill({ color: 0xffffff, alpha: 0.8 });
+  face.circle(6, -25.5, 0.5);
+  face.fill({ color: 0xffffff, alpha: 0.8 });
+  // Confident smile
+  face.arc(0, -19, 4, 0.1, Math.PI - 0.1);
+  face.stroke({ width: 1, color: 0x8b6b52 });
+  // Blush
+  face.ellipse(-7, -20, 2.5, 1.5);
+  face.fill({ color: 0xe8a0a0, alpha: 0.2 });
+  face.ellipse(7, -20, 2.5, 1.5);
+  face.fill({ color: 0xe8a0a0, alpha: 0.2 });
+  c.addChild(face);
 
   // Crown
   const crown = drawCrown();
-  crown.position.set(0, -CEO_RADIUS - 10);
+  crown.position.set(0, -38);
   crown.label = "ceo-crown";
   c.addChild(crown);
 
@@ -472,7 +607,7 @@ export function drawCEO(x: number, y: number): Container {
     }),
   });
   label.anchor.set(0.5, 0);
-  label.position.set(0, CEO_RADIUS + 6);
+  label.position.set(0, 30);
   c.addChild(label);
 
   // Interactive
