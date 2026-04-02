@@ -49,8 +49,30 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       // Set scene ref for ticker
       setSceneRef(scene);
 
+      // Collaboration graph layer
+      const collabLayer = new Graphics();
+      app.stage.addChild(collabLayer);
+      setCollabGraphics(collabLayer);
+
       // Init Hivemind swarm system
       initSwarm(scene, app.stage);
+
+      // Load active collaborations
+      import("@/integrations/supabase/client").then(({ supabase }) => {
+        supabase.from("agent_collaborations").select("*").in("status", ["pending", "in_progress"]).then(({ data }) => {
+          if (data) updateCollaborations(data);
+        });
+        // Realtime collab updates
+        const channel = supabase.channel("collab-graph")
+          .on("postgres_changes", { event: "*", schema: "public", table: "agent_collaborations" }, () => {
+            supabase.from("agent_collaborations").select("*").in("status", ["pending", "in_progress"]).then(({ data }) => {
+              if (data) updateCollaborations(data);
+            });
+          })
+          .subscribe();
+        // Store for cleanup
+        (window as any).__collabChannel = channel;
+      });
 
       // Set canvas height and force PixiJS renderer resize
       const h = getSceneHeight() + 40;
