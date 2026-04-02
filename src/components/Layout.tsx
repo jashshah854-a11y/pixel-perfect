@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Building2, Bot, ListTodo, FileText, Inbox, Volume2, VolumeX, ChevronLeft, ChevronRight } from "lucide-react";
+import { Building2, Bot, ListTodo, FileText, Inbox, Volume2, VolumeX, ChevronLeft, ChevronRight, BarChart3, Package } from "lucide-react";
 import { isMuted, setMuted } from "@/lib/sounds";
 
 const navItems = [
