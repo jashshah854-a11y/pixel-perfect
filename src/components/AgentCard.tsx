@@ -1,4 +1,7 @@
 import { StatusBadge } from "./StatusBadge";
+import { AgentMemoryView } from "./AgentMemoryView";
+import { useState } from "react";
+import { Brain } from "lucide-react";
 
 interface Agent {
   id: string;
