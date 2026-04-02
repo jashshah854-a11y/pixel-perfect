@@ -31,6 +31,18 @@ const statusDot: Record<string, string> = {
 
 export function AgentCard({ agent, compact, onStatusChange, onAssignTask }: AgentCardProps) {
   const [showMemory, setShowMemory] = useState(false);
+  const [researching, setResearching] = useState(false);
+
+  const triggerResearch = async () => {
+    setResearching(true);
+    try {
+      await supabase.functions.invoke("agent-research", { body: { agent_id: agent.id } });
+      toast.success(`${agent.name} completed a research session`);
+    } catch {
+      toast.error("Research failed");
+    }
+    setResearching(false);
+  };
 
   return (
     <div className="rounded-lg border bg-card p-4 space-y-3">
