@@ -8,6 +8,8 @@ const navItems = [
   { label: "Tasks", path: "/tasks", icon: ListTodo },
   { label: "Agents", path: "/agents", icon: Bot },
   { label: "Plans", path: "/plans", icon: FileText },
+  { label: "Analytics", path: "/analytics", icon: BarChart3 },
+  { label: "Deliverables", path: "/deliverables", icon: Package },
   { label: "Inbox", path: "/inbox", icon: Inbox },
 ];
 
