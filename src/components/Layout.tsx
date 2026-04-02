@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Building2, Bot, ListTodo, FileText, Inbox, Volume2, VolumeX, ChevronLeft, ChevronRight } from "lucide-react";
+import { Building2, Bot, ListTodo, FileText, Inbox, Volume2, VolumeX, ChevronLeft, ChevronRight, BarChart3, Package } from "lucide-react";
 import { isMuted, setMuted } from "@/lib/sounds";
 
 const navItems = [
@@ -8,6 +8,8 @@ const navItems = [
   { label: "Tasks", path: "/tasks", icon: ListTodo },
   { label: "Agents", path: "/agents", icon: Bot },
   { label: "Plans", path: "/plans", icon: FileText },
+  { label: "Analytics", path: "/analytics", icon: BarChart3 },
+  { label: "Deliverables", path: "/deliverables", icon: Package },
   { label: "Inbox", path: "/inbox", icon: Inbox },
 ];
 

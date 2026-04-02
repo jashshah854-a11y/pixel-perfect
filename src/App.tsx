@@ -11,6 +11,8 @@ import JobsPage from "./pages/JobsPage.tsx";
 import InboxPage from "./pages/InboxPage.tsx";
 import IntegrationsPage from "./pages/IntegrationsPage.tsx";
 import OfficePage from "./pages/OfficePage.tsx";
+import AnalyticsPage from "./pages/AnalyticsPage.tsx";
+import ClientViewPage from "./pages/ClientViewPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -27,6 +29,8 @@ const App = () => (
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/plans" element={<PlansPage />} />
           <Route path="/inbox" element={<InboxPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/deliverables" element={<ClientViewPage />} />
           <Route path="/office" element={<OfficePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
