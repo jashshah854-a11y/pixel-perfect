@@ -21,12 +21,12 @@ interface DepartmentDef {
 }
 
 const DEPARTMENTS: DepartmentDef[] = [
-  { name: "Dev", tint: 0x3b82f6 },
-  { name: "Design", tint: 0xa855f7 },
-  { name: "Planning", tint: 0xf59e0b },
-  { name: "Operations", tint: 0x10b981 },
-  { name: "QA", tint: 0x06b6d4 },
-  { name: "DevSecOps", tint: 0xf43f5e },
+  { name: "Orchestration", tint: 0x3b82f6 },
+  { name: "Architecture", tint: 0xa855f7 },
+  { name: "UI/UX", tint: 0xf59e0b },
+  { name: "Research", tint: 0x10b981 },
+  { name: "Review", tint: 0x06b6d4 },
+  { name: "DevOps", tint: 0xf43f5e },
 ];
 
 // Layout constants
