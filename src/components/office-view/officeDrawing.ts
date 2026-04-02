@@ -267,7 +267,7 @@ export function drawAgent(
   arms.fill(blend(color, 0x000000, 0.15));
   // Right hand
   arms.circle(11.5, 11, 3);
-  arms.fill(0xdbb896);
+  arms.fill(0xf0c8a0);
   c.addChild(arms);
 
   // --- Head ---
