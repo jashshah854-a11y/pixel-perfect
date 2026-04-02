@@ -26,6 +26,32 @@ const clockContainers: { hands: Graphics }[] = [];
 // === Scene references ===
 let sceneRef: SceneResult | null = null;
 
+// === Collaboration graph ===
+interface CollabLine {
+  fromAgentId: string;
+  toAgentId: string;
+  taskTitle: string;
+  alpha: number;
+}
+
+let collabLines: CollabLine[] = [];
+let collabGraphics: Graphics | null = null;
+
+export function setCollabGraphics(g: Graphics) {
+  collabGraphics = g;
+}
+
+export function updateCollaborations(collabs: Array<{ from_agent: string; to_agent: string; status: string; message: string }>) {
+  collabLines = collabs
+    .filter(c => c.status === "pending" || c.status === "in_progress")
+    .map(c => ({
+      fromAgentId: c.from_agent,
+      toAgentId: c.to_agent,
+      taskTitle: c.message,
+      alpha: 0.5,
+    }));
+}
+
 // === Claim notification system ===
 interface ClaimNotification {
   agentId: string;
@@ -271,6 +297,9 @@ export function animateScene(agentSprites: AgentSprite[]) {
   // Wall clocks
   if (tick % 60 === 0) updateWallClocks();
 
+  // Collaboration graph
+  renderCollabGraph(agentSprites);
+
   // Claim notifications
   updateClaimNotifications(agentSprites);
 }
@@ -504,6 +533,62 @@ function updateWallClocks() {
   }
 }
 
+// === Collaboration graph rendering ===
+function renderCollabGraph(agentSprites: AgentSprite[]) {
+  if (!collabGraphics || collabLines.length === 0) {
+    if (collabGraphics) collabGraphics.clear();
+    return;
+  }
+
+  collabGraphics.clear();
+
+  for (const line of collabLines) {
+    const fromSprite = agentSprites.find(s => s.agent.id === line.fromAgentId);
+    const toSprite = agentSprites.find(s => s.agent.id === line.toAgentId);
+    if (!fromSprite || !toSprite) continue;
+
+    const fromX = fromSprite.baseX;
+    const fromY = fromSprite.baseY;
+    const toX = toSprite.baseX;
+    const toY = toSprite.baseY;
+
+    // Animated pulse along the line
+    const pulse = Math.sin(tick * 0.04) * 0.15;
+    const alpha = line.alpha + pulse;
+
+    // Draw dashed energy line
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const segments = Math.floor(dist / 8);
+
+    for (let i = 0; i < segments; i++) {
+      const t1 = i / segments;
+      const t2 = (i + 0.5) / segments;
+      // Animate dash flow
+      const offset = (tick * 0.01) % 1;
+      const at1 = (t1 + offset) % 1;
+      const at2 = (t2 + offset) % 1;
+      if (at2 < at1) continue; // skip wrap-around segment
+
+      const x1 = fromX + dx * at1;
+      const y1 = fromY + dy * at1;
+      const x2 = fromX + dx * at2;
+      const y2 = fromY + dy * at2;
+
+      collabGraphics.moveTo(x1, y1);
+      collabGraphics.lineTo(x2, y2);
+      collabGraphics.stroke({ width: 1.2, color: 0x3b82f6, alpha: alpha * 0.6 });
+    }
+
+    // Glow dots at endpoints
+    collabGraphics.circle(fromX, fromY - 5, 2.5);
+    collabGraphics.fill({ color: 0x3b82f6, alpha: alpha * 0.4 });
+    collabGraphics.circle(toX, toY - 5, 2.5);
+    collabGraphics.fill({ color: 0x3b82f6, alpha: alpha * 0.4 });
+  }
+}
+
 export function resetTick() {
   tick = 0;
   clockContainers.length = 0;
@@ -511,4 +596,6 @@ export function resetTick() {
   particleGraphics = null;
   sceneRef = null;
   idleStates.clear();
+  collabLines = [];
+  collabGraphics = null;
 }
