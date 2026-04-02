@@ -53,6 +53,17 @@ export function KnowledgeLog({ agents }: KnowledgeLogProps) {
     ? (memories.reduce((s, m) => s + m.confidence, 0) / memories.length).toFixed(2)
     : "0";
 
+  // Learning trajectory: per-agent memory count and avg confidence
+  const agentTrajectory: Record<string, { count: number; avgConf: number }> = {};
+  for (const m of memories || []) {
+    if (!agentTrajectory[m.agent_id]) agentTrajectory[m.agent_id] = { count: 0, avgConf: 0 };
+    agentTrajectory[m.agent_id].count += 1;
+    agentTrajectory[m.agent_id].avgConf += m.confidence;
+  }
+  for (const id of Object.keys(agentTrajectory)) {
+    agentTrajectory[id].avgConf = agentTrajectory[id].avgConf / agentTrajectory[id].count;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -77,6 +88,31 @@ export function KnowledgeLog({ agents }: KnowledgeLogProps) {
           <option key={a.id} value={a.id}>{a.name}</option>
         ))}
       </select>
+
+      {/* Learning Trajectory */}
+      {Object.keys(agentTrajectory).length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-medium text-muted-foreground">Learning Trajectory</p>
+          <div className="flex gap-2 flex-wrap">
+            {agents.filter(a => agentTrajectory[a.id]).map(a => {
+              const t = agentTrajectory[a.id];
+              const barWidth = Math.min((t.count / Math.max(...Object.values(agentTrajectory).map(v => v.count), 1)) * 100, 100);
+              return (
+                <div key={a.id} className="flex items-center gap-1.5 text-[10px]">
+                  <span className="w-14 truncate text-muted-foreground">{a.name}</span>
+                  <div className="w-16 h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${barWidth}%` }} />
+                  </div>
+                  <span className="font-mono text-muted-foreground">{t.count}</span>
+                  <span className={`font-mono ${t.avgConf >= 0.7 ? "text-emerald-400" : "text-amber-400"}`}>
+                    {(t.avgConf * 100).toFixed(0)}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
         {tasks.map((task) => {

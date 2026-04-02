@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Brain, GitBranch, Play, X, User, ArrowRight, Loader2 } from "lucide-react";
+import { Brain, GitBranch, Play, X, User, ArrowRight, Loader2, AlertTriangle, Clock, Zap, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-// Department → keyword affinity (mirrors edge function logic)
 const DEPT_KEYWORDS: Record<string, string[]> = {
   orchestration: ["coordinate", "plan", "manage", "organize", "workflow", "pipeline"],
   architecture: ["design", "system", "infrastructure", "scale", "architecture", "database", "schema"],
@@ -11,16 +12,6 @@ const DEPT_KEYWORDS: Record<string, string[]> = {
   research: ["data", "analysis", "research", "insight", "report", "metric", "ai", "ml"],
   review: ["test", "quality", "bug", "verify", "validate", "debug", "fix", "security"],
   devops: ["api", "server", "endpoint", "deploy", "edge", "webhook", "backend", "function"],
-};
-
-const AGENT_DEPT_MAP: Record<string, string> = {
-  hivemind: "orchestration",
-  omega: "orchestration",
-  prism: "ui/ux",
-  oracle: "research",
-  sentinel: "review",
-  hawkeye: "devops",
-  atlas: "architecture",
 };
 
 const agentBadgeColors: Record<string, string> = {
@@ -40,6 +31,14 @@ interface SubtaskPreview {
   dependencies: string[];
 }
 
+interface OutcomeScenario {
+  label: string;
+  completionHours: number;
+  riskScore: number;
+  hivemindNeeded: boolean;
+  color: string;
+}
+
 interface PlanPreviewProps {
   title: string;
   content: string;
@@ -50,21 +49,15 @@ interface PlanPreviewProps {
 }
 
 function generatePreview(title: string, content: string, agents: Array<{ name: string; department: string; status: string }>): SubtaskPreview[] {
-  const fullText = `${title} ${content}`.toLowerCase();
   const subtasks: SubtaskPreview[] = [];
-
-  // Extract likely subtasks from content lines
   const lines = content.split("\n").filter(l => l.trim().length > 5);
   const taskLines = lines.filter(l => /^[-*•]/.test(l.trim()) || /^\d+[\.\)]/.test(l.trim()));
-
   const items = taskLines.length > 0
     ? taskLines.map(l => l.replace(/^[-*•\d\.\)]+\s*/, "").trim())
-    : [title]; // If no bullet points, use the title itself
+    : [title];
 
   for (const item of items.slice(0, 8)) {
     const itemText = item.toLowerCase();
-
-    // Score each agent
     let bestAgent = "omega";
     let bestScore = 0;
 
@@ -88,7 +81,6 @@ function generatePreview(title: string, content: string, agents: Array<{ name: s
     });
   }
 
-  // Add coordination task routed to Omega
   if (subtasks.length > 1) {
     subtasks.unshift({
       title: `Coordinate: ${title}`,
@@ -101,11 +93,74 @@ function generatePreview(title: string, content: string, agents: Array<{ name: s
   return subtasks;
 }
 
+function simulateOutcomes(
+  subtasks: SubtaskPreview[],
+  agents: Array<{ id: string; name: string; status: string }>,
+  activeTasks: number,
+  blockedTasks: number
+): OutcomeScenario[] {
+  const agentWorkloads: Record<string, number> = {};
+  for (const s of subtasks) {
+    agentWorkloads[s.suggestedAgent] = (agentWorkloads[s.suggestedAgent] || 0) + 1;
+  }
+
+  const maxWorkload = Math.max(...Object.values(agentWorkloads), 1);
+  const overloadedCount = Object.values(agentWorkloads).filter(v => v > 2).length;
+  const busyAgents = agents.filter(a => a.status === "working").length;
+
+  const baseHours = subtasks.length * 1.5;
+  const congestionFactor = 1 + (activeTasks * 0.1) + (busyAgents * 0.15);
+  const blockRisk = blockedTasks * 0.1;
+
+  return [
+    {
+      label: "Best Case",
+      completionHours: Math.round(baseHours * 0.7),
+      riskScore: Math.round(Math.max(5, blockRisk * 50)),
+      hivemindNeeded: false,
+      color: "text-emerald-400",
+    },
+    {
+      label: "Expected",
+      completionHours: Math.round(baseHours * congestionFactor),
+      riskScore: Math.round(Math.min(80, (blockRisk + overloadedCount * 0.15) * 100)),
+      hivemindNeeded: overloadedCount > 0,
+      color: "text-blue-400",
+    },
+    {
+      label: "Worst Case",
+      completionHours: Math.round(baseHours * congestionFactor * 1.8),
+      riskScore: Math.round(Math.min(95, (blockRisk + overloadedCount * 0.25 + 0.2) * 100)),
+      hivemindNeeded: true,
+      color: "text-red-400",
+    },
+  ];
+}
+
 export function PlanPreview({ title, content, agents, onConfirm, onCancel, isSubmitting }: PlanPreviewProps) {
   const subtasks = generatePreview(title, content, agents);
-
-  // Unique agents involved
   const involvedAgents = [...new Set(subtasks.map(s => s.suggestedAgent))];
+
+  // Fetch real system state for simulation
+  const { data: tasks } = useQuery({
+    queryKey: ["tasks-for-sim"],
+    queryFn: async () => {
+      const { data } = await supabase.from("tasks").select("status");
+      return data || [];
+    },
+  });
+
+  const activeTasks = tasks?.filter(t => t.status === "in_progress").length || 0;
+  const blockedTasks = tasks?.filter(t => t.status === "blocked").length || 0;
+
+  const scenarios = simulateOutcomes(subtasks, agents, activeTasks, blockedTasks);
+
+  // Workload distribution
+  const workloadDist: Record<string, number> = {};
+  for (const s of subtasks) {
+    workloadDist[s.suggestedAgent] = (workloadDist[s.suggestedAgent] || 0) + 1;
+  }
+  const maxWork = Math.max(...Object.values(workloadDist), 1);
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -130,8 +185,51 @@ export function PlanPreview({ title, content, agents, onConfirm, onCancel, isSub
         ))}
       </div>
 
+      {/* Outcome Simulation */}
+      <div className="space-y-1.5">
+        <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+          <BarChart3 className="h-3 w-3" /> Outcome Simulation
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {scenarios.map(s => (
+            <div key={s.label} className="rounded-md border border-border/20 bg-muted/20 p-2 text-center">
+              <p className={`text-[10px] font-medium ${s.color}`}>{s.label}</p>
+              <p className="text-sm font-bold font-mono mt-0.5">{s.completionHours}h</p>
+              <div className="flex items-center justify-center gap-1 mt-1">
+                <AlertTriangle className={`h-2.5 w-2.5 ${s.riskScore > 50 ? "text-red-400" : s.riskScore > 25 ? "text-amber-400" : "text-emerald-400"}`} />
+                <span className="text-[9px] text-muted-foreground">Risk {s.riskScore}%</span>
+              </div>
+              {s.hivemindNeeded && (
+                <span className="text-[8px] text-violet-400 flex items-center justify-center gap-0.5 mt-0.5">
+                  <Zap className="h-2 w-2" /> Hivemind
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Workload Distribution */}
+      <div className="space-y-1">
+        <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+          <Clock className="h-3 w-3" /> Workload Distribution
+        </p>
+        {Object.entries(workloadDist).map(([agent, count]) => (
+          <div key={agent} className="flex items-center gap-2 text-[11px]">
+            <span className="w-16 truncate text-right text-muted-foreground">{agent}</span>
+            <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${count > 2 ? "bg-amber-400" : "bg-primary"}`}
+                style={{ width: `${(count / maxWork) * 100}%` }}
+              />
+            </div>
+            <span className="text-[9px] font-mono text-muted-foreground w-4 text-right">{count}</span>
+          </div>
+        ))}
+      </div>
+
       {/* Task breakdown */}
-      <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+      <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
         {subtasks.map((sub, i) => (
           <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/30 border border-border/20">
             <span className="text-[10px] font-mono text-muted-foreground/50 w-4">{i + 1}</span>

@@ -10,7 +10,9 @@ import { ExecutiveSummary } from "@/components/ExecutiveSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
-import { Zap, Brain, X, Activity, Shield, ChevronDown, ChevronUp } from "lucide-react";
+import { Zap, Brain, X, Activity, Shield, Lightbulb, Bot } from "lucide-react";
+import { PredictivePanel } from "@/components/PredictivePanel";
+import { AutonomousControl } from "@/components/AutonomousControl";
 
 interface SelectedAgent {
   agent: {
@@ -26,7 +28,7 @@ interface SelectedAgent {
   y: number;
 }
 
-type OverlayPanel = "none" | "health" | "executive" | "knowledge";
+type OverlayPanel = "none" | "health" | "executive" | "knowledge" | "predict" | "autonomous";
 
 export default function OfficePage() {
   const [selected, setSelected] = useState<SelectedAgent | null>(null);
@@ -98,6 +100,24 @@ export default function OfficePage() {
             </Button>
             <Button
               size="sm"
+              variant={activePanel === "predict" ? "default" : "outline"}
+              onClick={() => togglePanel("predict")}
+              className="h-7 text-xs"
+            >
+              <Lightbulb className="h-3 w-3 mr-1" />
+              Predict
+            </Button>
+            <Button
+              size="sm"
+              variant={activePanel === "autonomous" ? "default" : "outline"}
+              onClick={() => togglePanel("autonomous")}
+              className="h-7 text-xs"
+            >
+              <Bot className="h-3 w-3 mr-1" />
+              Auto
+            </Button>
+            <Button
+              size="sm"
               variant="outline"
               onClick={() => {
                 const depts = ["Architecture", "UI/UX", "Research", "Review", "DevOps"];
@@ -120,6 +140,8 @@ export default function OfficePage() {
             {activePanel === "health" && <SystemHealthPanel />}
             {activePanel === "executive" && <ExecutiveSummary />}
             {activePanel === "knowledge" && <KnowledgeLog agents={agents} />}
+            {activePanel === "predict" && <PredictivePanel />}
+            {activePanel === "autonomous" && <AutonomousControl />}
           </div>
         )}
 
