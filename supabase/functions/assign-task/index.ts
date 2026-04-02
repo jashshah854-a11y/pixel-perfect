@@ -25,10 +25,11 @@ interface MemoryEntry {
 }
 
 function scoreAgent(
-  agent: { department: string; role: string; status: string },
+  agent: { id: string; department: string; role: string; status: string },
   taskText: string,
-  memories: MemoryEntry[]
-): { score: number; reasons: string[] } {
+  memories: MemoryEntry[],
+  completedCount: number
+): { score: number; reasons: string[]; confidence: number } {
   const text = taskText.toLowerCase();
   const dept = agent.department.toLowerCase();
   const keywords = DEPT_KEYWORDS[dept] || [];
@@ -61,6 +62,7 @@ function scoreAgent(
   }
 
   // === Memory-aware scoring (up to 25 bonus points) ===
+  let memoryBoost = 0;
   if (memories.length > 0) {
     const taskWords = text.split(/\s+/).filter(w => w.length > 3);
     let memoryScore = 0;
@@ -78,17 +80,31 @@ function scoreAgent(
       }
     }
 
-    const memBonus = Math.min(Math.round(memoryScore * 5), 25);
-    if (memBonus > 0) {
-      score += memBonus;
-      reasons.push(`Memory boost +${memBonus}: "${bestMemory}..."`);
+    memoryBoost = Math.min(Math.round(memoryScore * 5), 25);
+    if (memoryBoost > 0) {
+      score += memoryBoost;
+      reasons.push(`Memory boost +${memoryBoost}: "${bestMemory}..."`);
     }
+  }
+
+  // === Experience confidence (up to 15 bonus points) ===
+  const experienceBonus = Math.min(completedCount * 3, 15);
+  if (experienceBonus > 0) {
+    score += experienceBonus;
+    reasons.push(`Experience bonus +${experienceBonus} (${completedCount} tasks completed)`);
   }
 
   // Base competency
   score += 5;
+  score = Math.min(score, 100);
 
-  return { score: Math.min(score, 100), reasons };
+  // Calculate confidence as separate metric
+  const confidence = Math.min(
+    Math.round((keywordScore / 60) * 40 + (memoryBoost / 25) * 30 + (experienceBonus / 15) * 20 + 10),
+    100
+  );
+
+  return { score, reasons, confidence };
 }
 
 serve(async (req) => {
@@ -103,17 +119,19 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Load task, agents, and all agent memories
-    const [taskRes, agentsRes, memoriesRes] = await Promise.all([
+    // Load task, agents, memories, and completion history
+    const [taskRes, agentsRes, memoriesRes, completionsRes] = await Promise.all([
       supabase.from('tasks').select('*').eq('id', task_id).single(),
       supabase.from('agents').select('*'),
       supabase.from('agent_memory').select('agent_id, content, confidence, tags, memory_type').order('confidence', { ascending: false }).limit(200),
+      supabase.from('task_assignments').select('agent_id, role').eq('role', 'owner'),
     ]);
 
     if (!taskRes.data) throw new Error("Task not found");
     const task = taskRes.data;
     const agents = agentsRes.data || [];
     const allMemories = memoriesRes.data || [];
+    const completions = completionsRes.data || [];
 
     // Group memories by agent
     const memByAgent: Record<string, MemoryEntry[]> = {};
@@ -122,13 +140,20 @@ serve(async (req) => {
       memByAgent[m.agent_id].push(m);
     }
 
+    // Count completions per agent
+    const completionCounts: Record<string, number> = {};
+    for (const c of completions) {
+      completionCounts[c.agent_id] = (completionCounts[c.agent_id] || 0) + 1;
+    }
+
     const taskText = `${task.title} ${task.description || ""}`;
 
-    // Score all agents with memory awareness
+    // Score all agents with memory + experience awareness
     const scored = agents.map(agent => {
       const agentMemories = memByAgent[agent.id] || [];
-      const { score, reasons } = scoreAgent(agent, taskText, agentMemories);
-      return { agent, score, reasons };
+      const completed = completionCounts[agent.id] || 0;
+      const { score, reasons, confidence } = scoreAgent(agent, taskText, agentMemories, completed);
+      return { agent, score, reasons, confidence };
     }).sort((a, b) => b.score - a.score);
 
     // Assign roles
@@ -142,7 +167,9 @@ serve(async (req) => {
         agent_id: s.agent.id,
         role,
         fit_score: s.score,
-        reasoning: s.reasons.length > 0 ? s.reasons.join(". ") : "No strong match",
+        reasoning: s.reasons.length > 0 
+          ? `[Confidence: ${s.confidence}%] ${s.reasons.join(". ")}` 
+          : `[Confidence: ${s.confidence}%] No strong match`,
       };
     });
 
@@ -164,9 +191,10 @@ serve(async (req) => {
         last_active: new Date().toISOString(),
       }).eq('id', owner.agent_id);
 
+      const ownerScored = scored.find(s => s.agent.id === owner.agent_id);
       await supabase.from('inbox').insert({
         from_agent: owner.agent_id,
-        message: `Claimed task: "${task.title}" (fit score: ${owner.fit_score}/100)`,
+        message: `Claimed task: "${task.title}" (fit: ${owner.fit_score}/100, confidence: ${ownerScored?.confidence || 0}%)`,
         type: 'task_claim',
       });
 
@@ -188,6 +216,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       ok: true, 
       owner: owner?.agent_id || null,
+      owner_name: owner ? scored.find(s => s.agent.id === owner.agent_id)?.agent.name : null,
       assignments: assignments.map(a => ({ 
         agent_id: a.agent_id, 
         role: a.role, 
