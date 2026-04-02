@@ -66,6 +66,38 @@ export function triggerClaimNotification(agentId: string, taskTitle: string) {
   pendingClaims.push({ agentId, taskTitle, timer: 180, container: null }); // 3 seconds at 60fps
 }
 
+// === Agent personality system ===
+interface AgentPersonality {
+  decisionSpeed: number;      // 0.5-1.5, how quickly they react
+  collaborationTendency: number; // 0-1, how often they look toward others
+  focusIntensity: number;     // 0.5-1.5, how deep their work animations are
+  restlessness: number;       // 0-1, how often idle behaviors trigger
+}
+
+const agentPersonalities = new Map<string, AgentPersonality>();
+
+function getPersonality(agentId: string, agentName: string): AgentPersonality {
+  let p = agentPersonalities.get(agentId);
+  if (!p) {
+    // Generate deterministic personality from agent name
+    const h = hashStr(agentName);
+    p = {
+      decisionSpeed: 0.7 + (h % 60) / 100,
+      collaborationTendency: (h % 80) / 100,
+      focusIntensity: 0.8 + ((h * 7) % 50) / 100,
+      restlessness: 0.3 + ((h * 13) % 50) / 100,
+    };
+    agentPersonalities.set(agentId, p);
+  }
+  return p;
+}
+
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
 // === Idle behavior system ===
 type IdleAction = "none" | "look_left" | "look_right" | "stretch" | "shift_weight" | "lean_back" | "nod";
 
