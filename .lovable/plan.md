@@ -1,89 +1,128 @@
 
-# Multi-Agent Collaboration & Learning System
 
-## Overview
-Build a persistent intelligence layer across the agent office with three pillars: cross-agent collaboration, long-term learning from interactions, and autonomous self-improvement.
+# CEO Command Center Redesign
 
----
-
-## Part 1: Database Schema
-
-### New Tables
-1. **`agent_memory`** — Persistent learning store per agent
-   - agent_id, memory_type (preference/pattern/correction/insight), content, source_task_id, confidence, created_at
-   - Types: "preference" (my style/standards), "pattern" (recurring task patterns), "correction" (mistakes to avoid), "insight" (learned from research)
-
-2. **`agent_collaborations`** — Cross-agent coordination log
-   - id, task_id, from_agent, to_agent, collab_type (handoff/request_help/share_finding/review), message, status (pending/accepted/completed), created_at
-
-3. **`agent_research_log`** — Autonomous research tracking
-   - id, agent_id, topic, findings, source_url, relevance_score, applied (boolean), researched_at
-
-### Modified Tables
-- Enable realtime on agent_collaborations for live coordination visibility
+This is a large, coordinated transformation spanning scene layout, navigation, task assignment, orchestration flow, inbox control, and a knowledge/learning dashboard. Here is the implementation plan.
 
 ---
 
-## Part 2: Edge Functions
+## 1. Navigation Overhaul
 
-### `agent-collaborate` — Cross-agent coordination
-- Accepts: from_agent, to_agent, task_id, collab_type, message
-- Creates collaboration record
-- Sends inbox notification to receiving agent
-- Updates both agents' status when collaboration starts
+**Sidebar becomes collapsible slide-out panel:**
+- Replace the static `<aside>` in `Layout.tsx` with a hover-activated slide-out panel using absolute positioning
+- Hidden by default (width: 0), expands on mouse enter near left edge (within 16px) or a small trigger icon
+- Smooth CSS transition (300ms ease)
+- Swap nav order: Office, **Tasks** (second), Agents, Plans, Inbox
 
-### `agent-learn` — Memory extraction from completed tasks
-- Accepts: task_id (completed task)
-- Analyzes task title, description, assignment history, corrections
-- Extracts learnings per agent: what worked, what was corrected, patterns
-- Stores in agent_memory with confidence scoring
-- Uses Lovable AI to extract structured insights from task context
-
-### `agent-research` — Autonomous self-improvement
-- Accepts: agent_id
-- Based on agent's role/department, generates relevant research topics
-- Uses Lovable AI to synthesize improvements
-- Stores findings in agent_research_log
-- Only applies insights above confidence threshold (guardrail)
+**Files:** `src/components/Layout.tsx`
 
 ---
 
-## Part 3: UI Components
+## 2. Office Scene Spatial Redesign
 
-### CollaborationPanel (new)
-- Shows active collaborations between agents
-- Visual thread of handoffs, requests, shared findings
-- Displayed on Tasks page and Office page
+Rework `officeScene.ts` to restructure the CEO War Room into three distinct zones:
 
-### AgentMemoryView (new)
-- Shows what each agent has learned over time
-- Categorized by: preferences, patterns, corrections, insights
-- Accessible from agent detail popover
+```text
+┌─────────────────────────────────────────────────┐
+│ CEO WAR ROOM                                    │
+│ ┌──────────┐  ┌─────────────────────┐  ┌──────┐│
+│ │ Personal │  │   Central Meeting   │  │Quick ││
+│ │ CEO      │  │   Table (large,     │  │Assign││
+│ │ Office   │  │   clear purpose)    │  │Panel ││
+│ │ (left)   │  │   with chairs       │  │      ││
+│ └──────────┘  └─────────────────────┘  └──────┘│
+│ [Multi-monitor wall]  [Activity indicators]     │
+└─────────────────────────────────────────────────┘
+```
 
-### ResearchActivityFeed (new)
-- Shows autonomous research activity
-- What agents studied, what they learned, what was applied
-- Visible on Dashboard or dedicated section
+- **Left zone (25% width):** CEO avatar, personal desk with monitors, golden rug — the "personal office"
+- **Center zone (50% width):** Large conference table with 8 chairs, overhead lighting, whiteboard — clear "meeting/collaboration space"
+- **Right zone (25% width):** Quick task assignment panel (drawn as a command console with inline task creation)
+- Increase `CEO_OFFICE_H` from 240 to ~360 for more presence
+- Add ambient elements: holographic displays, status boards, data feeds to make it feel active
+
+**Neural Lounge clarity:** Rename to "NEURAL LOUNGE — REST & RECHARGE", add sleeping pods alongside sofas, dim the lighting tint, add "zen" ambient particles. This makes it clearly a rest/recovery space.
+
+**Files:** `src/components/office-view/officeScene.ts`, `src/components/office-view/officeDrawing.ts`
 
 ---
 
-## Part 4: Integration Points
+## 3. Department Room Click-to-Enter Interaction
 
-- TaskForm → after task completion, triggers `agent-learn`
-- Office idle state → periodically triggers `agent-research` for idle agents
-- Task assignment → checks agent_memory for better routing decisions
-- Collaboration triggers automatically when task spans multiple departments
+Add click handlers on department room containers so clicking a room zooms/scrolls the canvas to that room. This removes the "can't access workspaces" limitation.
+
+- Each room becomes clickable (already has `eventMode` potential)
+- On click, smooth scroll the container div to that room's Y position
+- Add a visual hover effect (brighter border glow) on room hover
+- Add a "Back to CEO" button overlay when scrolled to a department
+
+**Files:** `src/components/office-view/OfficeCanvas.tsx`, `src/components/office-view/officeScene.ts`
 
 ---
 
-## Files Changed
-- Migration: 3 new tables
-- `supabase/functions/agent-collaborate/index.ts` — new
-- `supabase/functions/agent-learn/index.ts` — new
-- `supabase/functions/agent-research/index.ts` — new
-- `src/components/CollaborationPanel.tsx` — new
-- `src/components/AgentMemoryView.tsx` — new
-- `src/components/ResearchFeed.tsx` — new
-- `src/pages/TasksPage.tsx` — add collaboration panel
-- `src/pages/OfficePage.tsx` — add collaboration visibility
-- `src/pages/AgentsPage.tsx` — add memory view to agent cards
+## 4. In-Office Task Assignment
+
+Add a React overlay panel on the right side of the Office page (not in PixiJS) for quick task creation and assignment without leaving the Office.
+
+- Small floating panel with: title input, priority selector, "Assign" button
+- On submit: creates task in DB, calls `assign-task` edge function, triggers claim animation + Hivemind dispatch
+- Panel is collapsible, toggled via a button in the Office header
+
+**Files:** `src/pages/OfficePage.tsx` (new `QuickTaskPanel` component inline or separate file)
+
+---
+
+## 5. Omega Orchestrator Flow
+
+Modify the plan submission flow so plans are routed through Omega:
+
+- Update `decompose-plan/index.ts` to explicitly assign the coordination task to Omega (agent with role containing "orchestrat" or name "omega")
+- Omega gets `owner` role on the coordination subtask; other subtasks get assigned to best-fit agents as before
+- Add inbox notification: "Omega received your plan and is distributing work"
+- On the Plans page, show "Sent to Omega for orchestration" status badge after submission
+
+**Files:** `supabase/functions/decompose-plan/index.ts`, `src/pages/PlansPage.tsx`
+
+---
+
+## 6. Inbox Clear All
+
+Add a "Clear All" button to InboxPage that deletes all inbox messages (with confirmation dialog).
+
+- Migration: Add DELETE RLS policy on inbox table (`true` for public)
+- Button with `AlertDialog` confirmation: "This will permanently remove all messages. Continue?"
+- On confirm: `supabase.from("inbox").delete().neq("id", "")`
+
+**Files:** `src/pages/InboxPage.tsx`, new migration for DELETE policy
+
+---
+
+## 7. Learning & Knowledge Log
+
+Create a new `KnowledgeLog` component accessible from the Office page (as a slide-out panel or tab):
+
+- Query `tasks` table (completed), join with `task_assignments` and `agent_memory`
+- Display as expandable cards:
+  - Task title, completion date, assigned agent name, priority badge
+  - Expandable detail: description, agent reasoning from `task_assignments.reasoning`, memories learned from `agent_memory` linked via `source_task_id`
+- Filter by agent, date range, task type
+- Summary stats at top: total completed, total memories, avg confidence
+
+**Files:** New `src/components/KnowledgeLog.tsx`, integrate into `src/pages/OfficePage.tsx`
+
+---
+
+## Technical Summary
+
+| Area | Files Modified | New Files |
+|------|---------------|-----------|
+| Navigation | `Layout.tsx` | — |
+| Scene layout | `officeScene.ts`, `officeDrawing.ts` | — |
+| Room interaction | `OfficeCanvas.tsx` | — |
+| Quick assign | `OfficePage.tsx` | `QuickTaskPanel.tsx` |
+| Omega orchestrator | `decompose-plan/index.ts`, `PlansPage.tsx` | — |
+| Inbox clear | `InboxPage.tsx` | Migration |
+| Knowledge log | `OfficePage.tsx` | `KnowledgeLog.tsx` |
+
+**Migration needed:** DELETE policy on `inbox` table.
+
