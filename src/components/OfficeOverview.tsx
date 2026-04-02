@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Activity, CheckCircle, Clock, Zap, Brain, FileText } from "lucide-react";
+import { Activity, CheckCircle, Zap, Brain, FileText } from "lucide-react";
 import { differenceInMinutes } from "date-fns";
 
 export function OfficeOverview() {

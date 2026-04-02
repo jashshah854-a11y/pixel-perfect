@@ -5,6 +5,7 @@ import { OfficeCanvas } from "@/components/office-view/OfficeCanvas";
 import { OfficeChat } from "@/components/OfficeChat";
 import { QuickTaskPanel } from "@/components/QuickTaskPanel";
 import { KnowledgeLog } from "@/components/KnowledgeLog";
+import { OfficeOverview } from "@/components/OfficeOverview";
 import { SystemHealthPanel } from "@/components/SystemHealthPanel";
 import { ExecutiveSummary } from "@/components/ExecutiveSummary";
 import { Skeleton } from "@/components/ui/skeleton";
