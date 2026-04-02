@@ -104,6 +104,10 @@ function scoreAgent(
     100
   );
 
+  // Prediction accuracy bonus from past suggestions
+  const predictionBonus = Math.min(Math.round(completedCount * 0.5), 5);
+  score = Math.min(score + predictionBonus, 100);
+
   return { score, reasons, confidence };
 }
 
