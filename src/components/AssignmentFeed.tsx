@@ -257,8 +257,8 @@ export function AssignmentFeed({ agentMap, taskMap }: AssignmentFeedProps) {
           return (
             <div
               key={taskId}
-              className={`rounded-lg border bg-card p-3 space-y-1.5 transition-all duration-500 ${
-                hasNew ? "animate-fade-in ring-1 ring-primary/30" : ""
+              className={`feed-item space-y-2 transition-all duration-slow ${
+                hasNew ? "animate-claim-glow ring-1 ring-primary/20" : ""
               }`}
             >
               {/* Header */}
