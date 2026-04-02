@@ -199,6 +199,7 @@ export function drawAgent(
   x: number,
   y: number,
   spriteNum: number = 1,
+  department: string = "",
 ): Container {
   const c = new Container();
   c.position.set(x, y);
