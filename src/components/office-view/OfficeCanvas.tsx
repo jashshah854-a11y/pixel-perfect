@@ -4,6 +4,7 @@ import { buildScene, getSceneHeight, type AgentSprite } from "./officeScene";
 import { animateScene, resetTick, registerClock, keyState, setSceneRef, setParticleGraphics, triggerClaimNotification, setCollabGraphics, updateCollaborations } from "./officeTicker";
 import { initSwarm, updateSwarm, resetSwarm, dispatchSwarm } from "./hivemindSwarm";
 import { Graphics } from "pixi.js";
+import { playSpawnPulse, playClaimChime } from "@/lib/sounds";
 
 interface Agent {
   id: string;
@@ -119,6 +120,7 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       const detail = (e as CustomEvent).detail;
       if (detail?.targetRoom && detail?.taskTitle) {
         dispatchSwarm(detail.targetRoom, detail.taskTitle, detail.intensity || 2);
+        playSpawnPulse();
       }
     };
 
@@ -127,6 +129,7 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       const detail = (e as CustomEvent).detail;
       if (detail?.agentId && detail?.taskTitle) {
         triggerClaimNotification(detail.agentId, detail.taskTitle);
+        playClaimChime();
       }
     };
 

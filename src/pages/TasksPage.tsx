@@ -9,6 +9,7 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { playClaimChime, playDropConfirm } from "@/lib/sounds";
 
 const columns = [
   { key: "queued", label: "Queued" },
@@ -70,6 +71,7 @@ export default function TasksPage() {
       try {
         const { data: result } = await supabase.functions.invoke("assign-task", { body: { task_id: data.id } });
         toast.success("Task created & auto-assigned to best-fit agent");
+        playClaimChime();
         if (result?.owner) {
           window.dispatchEvent(new CustomEvent("agent-claim", {
             detail: { agentId: result.owner, taskTitle: task.title }
@@ -132,6 +134,7 @@ export default function TasksPage() {
       const task = tasks?.find(t => t.id === dragTaskId);
       if (task && task.status !== columnKey) {
         updateTaskStatus.mutate({ taskId: dragTaskId, status: columnKey });
+        playDropConfirm();
         toast.success(`Task moved to ${columns.find(c => c.key === columnKey)?.label}`);
       }
     }
