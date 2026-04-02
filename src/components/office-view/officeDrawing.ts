@@ -242,7 +242,79 @@ export function drawAgent(
   sprite.label = "sprite-body";
   c.addChild(sprite);
 
-  // Status dot (top-right)
+  // Department accessories drawn on top of sprite
+  const acc = new Graphics();
+  const deptLower = department.toLowerCase();
+  if (deptLower === "orchestration") {
+    // Headphones: band over head + ear cups
+    acc.roundRect(-SPRITE_H / 2 + 4, -4, SPRITE_H - 8, 3, 1.5);
+    acc.fill({ color: 0x27272a });
+    acc.circle(-SPRITE_H / 2 + 5, 2, 4);
+    acc.fill({ color: 0x3b82f6 });
+    acc.stroke({ color: 0x1e3a5f, width: 1 });
+    acc.circle(SPRITE_H / 2 - 5, 2, 4);
+    acc.fill({ color: 0x3b82f6 });
+    acc.stroke({ color: 0x1e3a5f, width: 1 });
+    acc.label = "accessory";
+    c.addChild(acc);
+  } else if (deptLower === "architecture") {
+    // Glasses: two circles with bridge
+    acc.circle(-5, 10, 4);
+    acc.stroke({ color: 0xd4d4d8, width: 1.2 });
+    acc.circle(5, 10, 4);
+    acc.stroke({ color: 0xd4d4d8, width: 1.2 });
+    acc.moveTo(-1, 10);
+    acc.lineTo(1, 10);
+    acc.stroke({ color: 0xd4d4d8, width: 1 });
+    acc.label = "accessory";
+    c.addChild(acc);
+  } else if (deptLower === "ui/ux") {
+    // Beret: flattened ellipse hat tilted
+    acc.ellipse(2, -3, 10, 5);
+    acc.fill({ color: 0xf59e0b });
+    acc.circle(2, -7, 2);
+    acc.fill({ color: 0xf59e0b });
+    acc.label = "accessory";
+    c.addChild(acc);
+  } else if (deptLower === "research") {
+    // Lab coat collar: white V-shape below neck
+    acc.moveTo(-10, 18);
+    acc.lineTo(0, 24);
+    acc.lineTo(10, 18);
+    acc.lineTo(8, 20);
+    acc.lineTo(0, 26);
+    acc.lineTo(-8, 20);
+    acc.closePath();
+    acc.fill({ color: 0xfafafa, alpha: 0.85 });
+    acc.stroke({ color: 0xd4d4d8, width: 0.5 });
+    acc.label = "accessory";
+    c.addChild(acc);
+  } else if (deptLower === "review") {
+    // Shield badge on chest
+    acc.moveTo(8, 20);
+    acc.lineTo(14, 18);
+    acc.lineTo(14, 24);
+    acc.lineTo(11, 27);
+    acc.lineTo(8, 24);
+    acc.closePath();
+    acc.fill({ color: 0x06b6d4 });
+    acc.stroke({ color: 0x0e7490, width: 0.8 });
+    // Star on shield
+    acc.circle(11, 22, 1.5);
+    acc.fill({ color: 0xffffff, alpha: 0.8 });
+    acc.label = "accessory";
+    c.addChild(acc);
+  } else if (deptLower === "devops") {
+    // Hard hat: rounded dome on top
+    acc.roundRect(-10, -5, 20, 7, 4);
+    acc.fill({ color: 0xfbbf24 });
+    acc.stroke({ color: 0xd97706, width: 0.8 });
+    // Brim
+    acc.roundRect(-13, 1, 26, 3, 1);
+    acc.fill({ color: 0xf59e0b });
+    acc.label = "accessory";
+    c.addChild(acc);
+  }
   const dot = new Graphics();
   dot.circle(SPRITE_H / 2 - 1, 3, 4.5);
   dot.fill(STATUS_COLORS[status] || 0x71717a);
