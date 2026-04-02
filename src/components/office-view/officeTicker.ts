@@ -637,6 +637,7 @@ export function resetTick() {
   particleGraphics = null;
   sceneRef = null;
   idleStates.clear();
+  agentPersonalities.clear();
   collabLines = [];
   collabGraphics = null;
 }
