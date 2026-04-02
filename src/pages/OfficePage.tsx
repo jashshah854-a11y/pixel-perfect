@@ -4,7 +4,9 @@ import { Layout } from "@/components/Layout";
 import { OfficeCanvas } from "@/components/office-view/OfficeCanvas";
 import { OfficeChat } from "@/components/OfficeChat";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
+import { Zap } from "lucide-react";
 
 interface SelectedAgent {
   agent: {
