@@ -469,38 +469,40 @@ export function drawDesk(x: number, y: number): Container {
   const c = new Container();
   c.position.set(x, y);
 
-  const g = new Graphics();
-
-  // Multi-layer shadow
-  g.ellipse(DESK_W / 2, DESK_H + 4, DESK_W / 2 + 8, 7);
-  g.fill({ color: 0x000000, alpha: 0.08 });
-  g.ellipse(DESK_W / 2, DESK_H + 3, DESK_W / 2 + 4, 5);
-  g.fill({ color: 0x000000, alpha: 0.12 });
+  // Shadow layer
+  const shadowG = new Graphics();
+  shadowG.ellipse(DESK_W / 2, DESK_H + 4, DESK_W / 2 + 8, 7);
+  shadowG.fill({ color: 0x000000, alpha: 0.08 });
+  shadowG.ellipse(DESK_W / 2, DESK_H + 3, DESK_W / 2 + 4, 5);
+  shadowG.fill({ color: 0x000000, alpha: 0.12 });
+  c.addChild(shadowG);
 
   // LED underglow
-  g.ellipse(DESK_W / 2, DESK_H + 1, DESK_W / 2 - 4, 3);
-  g.fill({ color: 0x3b82f6, alpha: 0.06 });
-  g.label = "desk-underglow";
+  const underglow = new Graphics();
+  underglow.ellipse(DESK_W / 2, DESK_H + 1, DESK_W / 2 - 4, 3);
+  underglow.fill({ color: 0x3b82f6, alpha: 0.06 });
+  underglow.label = "desk-underglow";
+  c.addChild(underglow);
 
-  // Desk legs — metallic
-  g.roundRect(4, DESK_H - 2, 3, 6, 1);
-  g.fill(0x52525b);
-  g.roundRect(DESK_W - 7, DESK_H - 2, 3, 6, 1);
-  g.fill(0x52525b);
+  // Desk legs
+  const legs = new Graphics();
+  legs.roundRect(4, DESK_H - 2, 3, 6, 1);
+  legs.fill(0x52525b);
+  legs.roundRect(DESK_W - 7, DESK_H - 2, 3, 6, 1);
+  legs.fill(0x52525b);
+  c.addChild(legs);
 
-  // Desk surface — dark premium
-  g.roundRect(0, 0, DESK_W, DESK_H, 4);
-  g.fill(0x18181b);
-  g.roundRect(1, 1, DESK_W - 2, DESK_H - 2, 3);
-  g.fill(0x1e1e22);
-  // Edge highlight
-  g.roundRect(2, 2, DESK_W - 4, 3, 1.5);
-  g.fill({ color: 0x3b82f6, alpha: 0.04 });
-  // Subtle surface sheen
-  g.roundRect(4, 3, DESK_W - 8, 1, 0.5);
-  g.fill({ color: 0xffffff, alpha: 0.02 });
-
-  c.addChild(g);
+  // Desk surface
+  const surface = new Graphics();
+  surface.roundRect(0, 0, DESK_W, DESK_H, 4);
+  surface.fill(0x18181b);
+  surface.roundRect(1, 1, DESK_W - 2, DESK_H - 2, 3);
+  surface.fill(0x1e1e22);
+  surface.roundRect(2, 2, DESK_W - 4, 3, 1.5);
+  surface.fill({ color: 0x3b82f6, alpha: 0.04 });
+  surface.roundRect(4, 3, DESK_W - 8, 1, 0.5);
+  surface.fill({ color: 0xffffff, alpha: 0.02 });
+  c.addChild(surface);
 
   // === Dual Monitor Setup ===
   const monBase = new Graphics();
@@ -510,21 +512,27 @@ export function drawDesk(x: number, y: number): Container {
   monBase.fill(0x27272a);
   c.addChild(monBase);
 
-  // Left monitor
+  // Left monitor — frame and screen as separate Graphics to avoid path leaks
+  const monLFrame = new Graphics();
+  monLFrame.roundRect(DESK_W / 2 - 26, -20, 22, 18, 2);
+  monLFrame.fill(0x0a0a0e);
+  monLFrame.stroke({ color: 0x27272a, width: 1 });
+  c.addChild(monLFrame);
+
   const monL = new Graphics();
-  monL.roundRect(DESK_W / 2 - 26, -20, 22, 18, 2);
-  monL.fill(0x0a0a0e);
-  monL.stroke({ color: 0x27272a, width: 1 });
   monL.roundRect(DESK_W / 2 - 24, -18, 18, 14, 1);
   monL.fill({ color: 0x0d1b2a, alpha: 0.95 });
   monL.label = "monitor-screen-l";
   c.addChild(monL);
 
   // Right monitor
+  const monRFrame = new Graphics();
+  monRFrame.roundRect(DESK_W / 2 + 4, -20, 22, 18, 2);
+  monRFrame.fill(0x0a0a0e);
+  monRFrame.stroke({ color: 0x27272a, width: 1 });
+  c.addChild(monRFrame);
+
   const monR = new Graphics();
-  monR.roundRect(DESK_W / 2 + 4, -20, 22, 18, 2);
-  monR.fill(0x0a0a0e);
-  monR.stroke({ color: 0x27272a, width: 1 });
   monR.roundRect(DESK_W / 2 + 6, -18, 18, 14, 1);
   monR.fill({ color: 0x0d1b2a, alpha: 0.95 });
   monR.label = "monitor-screen-r";
@@ -537,46 +545,57 @@ export function drawDesk(x: number, y: number): Container {
   glow.label = "monitor-glow";
   c.addChild(glow);
 
-  // Keyboard — mechanical style
+  // Keyboard — outline separate from keys
+  const kbOutline = new Graphics();
+  kbOutline.roundRect(DESK_W / 2 - 18, 9, 36, 12, 2);
+  kbOutline.fill(0x18181b);
+  kbOutline.stroke({ color: 0x27272a, width: 0.5 });
+  c.addChild(kbOutline);
+
   const kb = new Graphics();
-  kb.roundRect(DESK_W / 2 - 18, 9, 36, 12, 2);
-  kb.fill(0x18181b);
-  kb.stroke({ color: 0x27272a, width: 0.5 });
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 9; col++) {
       kb.roundRect(DESK_W / 2 - 16 + col * 3.8, 10.5 + row * 3, 3, 2.2, 0.4);
       kb.fill({ color: 0x27272a, alpha: 0.7 });
     }
   }
-  // RGB accent on spacebar
   kb.roundRect(DESK_W / 2 - 8, 10.5 + 3 * 3, 16, 2.2, 0.5);
   kb.fill({ color: 0x3b82f6, alpha: 0.15 });
   c.addChild(kb);
 
-  // Coffee mug — premium
-  const mug = new Graphics();
+  // Coffee mug — body and handle as separate Graphics
   const mx = DESK_W - 14, my = DESK_H - 16;
-  mug.roundRect(mx - 5, my - 6, 10, 10, 2);
-  mug.fill(0x27272a);
-  mug.stroke({ color: 0x3f3f46, width: 0.8 });
-  mug.arc(mx + 5, my - 1, 4, -1.2, 1.2);
-  mug.stroke({ width: 1, color: 0x3f3f46 });
-  mug.ellipse(mx, my - 4, 3.5, 1.5);
-  mug.fill({ color: 0x7c5a3a, alpha: 0.7 });
-  mug.label = "coffee-mug";
-  c.addChild(mug);
+  const mugBody = new Graphics();
+  mugBody.roundRect(mx - 5, my - 6, 10, 10, 2);
+  mugBody.fill(0x27272a);
+  mugBody.stroke({ color: 0x3f3f46, width: 0.8 });
+  c.addChild(mugBody);
 
-  // Notepad
-  const pad = new Graphics();
-  pad.roundRect(4, DESK_H - 18, 12, 14, 1);
-  pad.fill(0x1c1c20);
-  pad.stroke({ color: 0x27272a, width: 0.4 });
+  const mugHandle = new Graphics();
+  mugHandle.arc(mx + 5, my - 1, 4, -1.2, 1.2);
+  mugHandle.stroke({ width: 1, color: 0x3f3f46 });
+  c.addChild(mugHandle);
+
+  const mugTop = new Graphics();
+  mugTop.ellipse(mx, my - 4, 3.5, 1.5);
+  mugTop.fill({ color: 0x7c5a3a, alpha: 0.7 });
+  mugTop.label = "coffee-mug";
+  c.addChild(mugTop);
+
+  // Notepad — border separate from lines
+  const padBg = new Graphics();
+  padBg.roundRect(4, DESK_H - 18, 12, 14, 1);
+  padBg.fill(0x1c1c20);
+  padBg.stroke({ color: 0x27272a, width: 0.4 });
+  c.addChild(padBg);
+
+  const padLines = new Graphics();
   for (let l = 0; l < 4; l++) {
-    pad.moveTo(6, DESK_H - 15 + l * 3);
-    pad.lineTo(14, DESK_H - 15 + l * 3);
-    pad.stroke({ width: 0.3, color: 0x3f3f46, alpha: 0.3 });
+    padLines.moveTo(6, DESK_H - 15 + l * 3);
+    padLines.lineTo(14, DESK_H - 15 + l * 3);
+    padLines.stroke({ width: 0.3, color: 0x3f3f46, alpha: 0.3 });
   }
-  c.addChild(pad);
+  c.addChild(padLines);
 
   return c;
 }
