@@ -29,11 +29,9 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
   useEffect(() => {
     if (!app) return;
 
-    const init = async () => {
+    const init = () => {
       app.stage.removeChildren();
       resetTick();
-
-      await Assets.load(SPRITE_URLS);
 
       const width = app.screen.width;
       const scene = buildScene(agents, width);

@@ -290,10 +290,8 @@ export function drawAgent(
     acc.roundRect(-12, headY - 9, 24, 3, 1);
     acc.fill(0xf59e0b);
   }
-  if (acc.geometry) {
-    acc.label = "accessory";
-    c.addChild(acc);
-  }
+  acc.label = "accessory";
+  c.addChild(acc);
 
   // Status dot
   const dot = new Graphics();
