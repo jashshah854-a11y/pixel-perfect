@@ -2,7 +2,9 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { useOfficePixiRuntime } from "./useOfficePixiRuntime";
 import { buildScene, getSceneHeight, type AgentSprite } from "./officeScene";
 import { animateScene, resetTick, registerClock, keyState, setSceneRef, setParticleGraphics } from "./officeTicker";
-import { Graphics } from "pixi.js";
+import { Assets, Graphics } from "pixi.js";
+
+const SPRITE_URLS = Array.from({ length: 14 }, (_, i) => `/sprites/${i + 1}-D-1.png`);
 
 interface Agent {
   id: string;
@@ -29,59 +31,64 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
   useEffect(() => {
     if (!app) return;
 
-    app.stage.removeChildren();
-    resetTick();
+    const init = async () => {
+      app.stage.removeChildren();
+      resetTick();
 
-    const width = app.screen.width;
-    const scene = buildScene(agents, width);
-    app.stage.addChild(scene.root);
-    spritesRef.current = scene.agentSprites;
+      await Assets.load(SPRITE_URLS);
 
-    // Particle overlay
-    const particleLayer = new Graphics();
-    app.stage.addChild(particleLayer);
-    setParticleGraphics(particleLayer);
+      const width = app.screen.width;
+      const scene = buildScene(agents, width);
+      app.stage.addChild(scene.root);
+      spritesRef.current = scene.agentSprites;
 
-    // Set scene ref for ticker
-    setSceneRef(scene);
+      // Particle overlay
+      const particleLayer = new Graphics();
+      app.stage.addChild(particleLayer);
+      setParticleGraphics(particleLayer);
 
-    // Set canvas height and force PixiJS renderer resize
-    const h = getSceneHeight() + 40;
-    setCanvasHeight(h);
-    // Force renderer resize after React updates the div
-    requestAnimationFrame(() => {
-      if (containerRef.current) {
-        app.renderer.resize(containerRef.current.clientWidth, h);
-      }
-    });
+      // Set scene ref for ticker
+      setSceneRef(scene);
 
-    // Register wall clocks
-    const findClocks = (container: import("pixi.js").Container) => {
-      for (const child of container.children) {
-        if (child.label === "wall-clock") {
-          const hands = (child as import("pixi.js").Container).children.find(
-            (c) => c.label === "clock-hands"
-          );
-          if (hands instanceof Graphics) {
-            registerClock(hands);
+      // Set canvas height and force PixiJS renderer resize
+      const h = getSceneHeight() + 40;
+      setCanvasHeight(h);
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          app.renderer.resize(containerRef.current.clientWidth, h);
+        }
+      });
+
+      // Register wall clocks
+      const findClocks = (container: import("pixi.js").Container) => {
+        for (const child of container.children) {
+          if (child.label === "wall-clock") {
+            const hands = (child as import("pixi.js").Container).children.find(
+              (c) => c.label === "clock-hands"
+            );
+            if (hands instanceof Graphics) {
+              registerClock(hands);
+            }
+          }
+          if ("children" in child) {
+            findClocks(child as import("pixi.js").Container);
           }
         }
-        if ("children" in child) {
-          findClocks(child as import("pixi.js").Container);
-        }
+      };
+      findClocks(scene.root);
+
+      // Wire click handlers
+      for (const sprite of scene.agentSprites) {
+        sprite.container.on("pointertap", (e) => {
+          const bounds = (containerRef.current as HTMLDivElement).getBoundingClientRect();
+          const sx = e.global.x + bounds.left;
+          const sy = e.global.y + bounds.top;
+          onAgentClick?.(sprite.agent, sx, sy);
+        });
       }
     };
-    findClocks(scene.root);
 
-    // Wire click handlers
-    for (const sprite of scene.agentSprites) {
-      sprite.container.on("pointertap", (e) => {
-        const bounds = (containerRef.current as HTMLDivElement).getBoundingClientRect();
-        const sx = e.global.x + bounds.left;
-        const sy = e.global.y + bounds.top;
-        onAgentClick?.(sprite.agent, sx, sy);
-      });
-    }
+    init();
   }, [app, agents, onAgentClick]);
 
   // Animation ticker
