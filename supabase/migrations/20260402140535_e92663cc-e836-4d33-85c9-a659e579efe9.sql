@@ -1,0 +1,1 @@
+DELETE FROM public.tool_connections WHERE id IN ('chatgpt', 'perplexity');
