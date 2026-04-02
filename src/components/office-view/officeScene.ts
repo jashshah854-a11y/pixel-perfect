@@ -99,6 +99,10 @@ export function buildScene(
   ceoRoom.position.set(EDGE_PAD, cursorY);
   root.addChild(ceoRoom);
 
+  // Rug under collab table
+  const rug = drawRug(fullW / 2, CEO_OFFICE_H / 2 + 14, 90, 30, 0xf59e0b);
+  ceoRoom.addChild(rug);
+
   // Collab table
   const collabTable = drawCollabTable(fullW / 2, CEO_OFFICE_H / 2 + 10);
   ceoRoom.addChild(collabTable);
