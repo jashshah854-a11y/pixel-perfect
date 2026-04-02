@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import { Send, MessageSquare } from "lucide-react";
 
 interface ChatMessage {
   id: string;
@@ -67,41 +67,43 @@ export function OfficeChat({ agents }: { agents: Agent[] }) {
     }
   };
 
+  const hasMessages = messages && messages.length > 0;
+
   return (
-    <div className="rounded-xl border bg-card flex flex-col h-64">
-      <div className="px-3 py-2 border-b">
-        <p className="text-xs font-medium text-muted-foreground">Chat Room</p>
-      </div>
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
-        {(!messages || messages.length === 0) && (
-          <p className="text-xs text-muted-foreground/50 text-center py-6">No messages yet</p>
+    <div className="rounded-lg border border-border/20 bg-card/40 backdrop-blur-sm flex flex-col h-36">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-1" style={{ scrollbarWidth: "thin" }}>
+        {!hasMessages && (
+          <div className="flex flex-col items-center justify-center h-full gap-1 text-muted-foreground/30">
+            <MessageSquare className="h-4 w-4" />
+            <p className="text-[10px] tracking-wide uppercase">Command Channel</p>
+          </div>
         )}
         {messages?.map((msg) => {
           const sender = msg.from_agent ? agentMap[msg.from_agent] || msg.from_agent : "You";
           return (
-            <div key={msg.id} className="text-xs">
+            <div key={msg.id} className="text-xs leading-relaxed">
               <span className={`font-medium ${msg.from_agent ? "text-primary" : "text-foreground"}`}>
-                {sender}:
+                {sender}
               </span>{" "}
               <span className="text-muted-foreground">{msg.message}</span>
             </div>
           );
         })}
       </div>
-      <div className="border-t px-3 py-2 flex items-center gap-2">
+      <div className="border-t border-border/15 px-3 py-1.5 flex items-center gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Type a message..."
-          className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/40"
+          placeholder="Command..."
+          className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/30"
         />
         <button
           onClick={sendMessage}
           disabled={!input.trim() || sending}
           className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-30"
         >
-          <Send className="h-3.5 w-3.5" />
+          <Send className="h-3 w-3" />
         </button>
       </div>
     </div>

@@ -126,7 +126,7 @@ export function Layout({ children, totalTokens = 0, unreadCount = 0 }: LayoutPro
       </header>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto p-4 md:p-6 pb-20 md:pb-6">{children}</main>
+      <main className="flex-1 overflow-hidden p-2 md:p-3 pb-16 md:pb-3">{children}</main>
 
       {/* Mobile bottom tabs */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 flex md:hidden items-center justify-around border-t border-border/40 bg-background/95 backdrop-blur-sm py-2">
