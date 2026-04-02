@@ -98,6 +98,7 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       const detail = (e as CustomEvent).detail;
       if (detail?.targetRoom && detail?.taskTitle) {
         dispatchSwarm(detail.targetRoom, detail.taskTitle, detail.intensity || 2);
+        playSpawnPulse();
       }
     };
 
