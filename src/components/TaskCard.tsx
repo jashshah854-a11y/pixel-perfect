@@ -1,4 +1,5 @@
 import { StatusBadge } from "./StatusBadge";
+import { TaskOutputViewer } from "./TaskOutputViewer";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ interface TaskCardProps {
     priority: string;
     source: string;
     status: string;
+    description?: string | null;
   };
   agentName?: string;
 }
@@ -25,16 +27,39 @@ export function TaskCard({ task, agentName }: TaskCardProps) {
       completed_at: new Date().toISOString(),
     }).eq("id", task.id);
 
+    // Auto-generate output
+    const outputContent = [
+      `## Task: ${task.title}`,
+      task.description ? `\n### Description\n${task.description}` : "",
+      `\n### Execution Summary`,
+      `- **Status**: Completed`,
+      `- **Priority**: ${task.priority}`,
+      `- **Source**: ${task.source}`,
+      agentName ? `- **Handled by**: ${agentName}` : "",
+      `- **Completed at**: ${new Date().toLocaleString()}`,
+      `\n### Outcome`,
+      `Task executed and completed successfully. Learnings extracted and stored in agent memory.`,
+    ].filter(Boolean).join("\n");
+
+    await supabase.from("task_outputs").insert({
+      task_id: task.id,
+      title: `${task.title} — Report`,
+      content: outputContent,
+      output_type: "report",
+      format: "markdown",
+    });
+
     try {
       await supabase.functions.invoke("agent-learn", { body: { task_id: task.id } });
-      toast.success("Task completed — agents learning from it");
+      toast.success("Task completed — output generated & agents learning");
     } catch {
-      toast.success("Task completed");
+      toast.success("Task completed — output generated");
     }
 
     queryClient.invalidateQueries({ queryKey: ["tasks"] });
     queryClient.invalidateQueries({ queryKey: ["agents"] });
     queryClient.invalidateQueries({ queryKey: ["agent-memory"] });
+    queryClient.invalidateQueries({ queryKey: ["task-outputs", task.id] });
   };
 
   return (
@@ -61,6 +86,7 @@ export function TaskCard({ task, agentName }: TaskCardProps) {
           Complete & Learn
         </button>
       )}
+      <TaskOutputViewer taskId={task.id} taskTitle={task.title} isCompleted={task.status === "done"} />
     </div>
   );
 }
