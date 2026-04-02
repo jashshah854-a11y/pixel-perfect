@@ -2,6 +2,7 @@
 // All sounds are procedurally generated — no external files needed
 
 let ctx: AudioContext | null = null;
+let muted = localStorage.getItem("sound-muted") === "true";
 
 function getCtx(): AudioContext {
   if (!ctx) ctx = new AudioContext();
@@ -9,13 +10,21 @@ function getCtx(): AudioContext {
   return ctx;
 }
 
+export function isMuted(): boolean {
+  return muted;
+}
+
+export function setMuted(value: boolean) {
+  muted = value;
+  localStorage.setItem("sound-muted", String(value));
+}
+
 /** Subtle chime — agent claims a task */
 export function playClaimChime() {
+  if (muted) return;
   try {
     const ac = getCtx();
     const now = ac.currentTime;
-
-    // Two-note ascending chime (C5 → E5)
     [523.25, 659.25].forEach((freq, i) => {
       const osc = ac.createOscillator();
       const gain = ac.createGain();
@@ -33,10 +42,10 @@ export function playClaimChime() {
 
 /** Soft pulse — Hivemind spawns sub-agents */
 export function playSpawnPulse() {
+  if (muted) return;
   try {
     const ac = getCtx();
     const now = ac.currentTime;
-
     const osc = ac.createOscillator();
     const gain = ac.createGain();
     osc.type = "sine";
@@ -54,11 +63,10 @@ export function playSpawnPulse() {
 
 /** Confirmation tone — successful drag-and-drop */
 export function playDropConfirm() {
+  if (muted) return;
   try {
     const ac = getCtx();
     const now = ac.currentTime;
-
-    // Quick three-note confirmation (G4 → B4 → D5)
     [392, 493.88, 587.33].forEach((freq, i) => {
       const osc = ac.createOscillator();
       const gain = ac.createGain();
