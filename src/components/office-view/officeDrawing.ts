@@ -543,11 +543,11 @@ export function drawCEO(x: number, y: number): Container {
   arms.roundRect(-16, -8, 5, 18, 2.5);
   arms.fill(blend(ceoColor, 0x000000, 0.15));
   arms.circle(-13.5, 11, 3.5);
-  arms.fill(0xdbb896);
+  arms.fill(0xf0c8a0);
   arms.roundRect(11, -8, 5, 18, 2.5);
   arms.fill(blend(ceoColor, 0x000000, 0.15));
   arms.circle(13.5, 11, 3.5);
-  arms.fill(0xdbb896);
+  arms.fill(0xf0c8a0);
   c.addChild(arms);
 
   // --- Head ---
