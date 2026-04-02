@@ -8,7 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { Plus, ChevronDown, ChevronUp, Bot } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, Bot, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
@@ -85,6 +96,17 @@ export default function PlansPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["plans"] }),
   });
 
+  const clearAllPlans = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("plans").delete().gte("created_at", "1970-01-01");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plans"] });
+      toast.success("All plans cleared");
+    },
+  });
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -97,9 +119,34 @@ export default function PlansPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Plans</h2>
-          <Button size="sm" onClick={() => setFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> New Plan
-          </Button>
+          <div className="flex items-center gap-2">
+            {plans && plans.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear all plans?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently remove all plans. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => clearAllPlans.mutate()}>
+                      Clear All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <Button size="sm" onClick={() => setFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> New Plan
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
