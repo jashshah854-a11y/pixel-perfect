@@ -11,23 +11,33 @@ interface SubAgent {
   id: number;
   container: Container;
   phase: SwarmPhase;
-  progress: number;       // 0-1 through current phase
+  progress: number;
   originX: number;
   originY: number;
   targetX: number;
   targetY: number;
   targetRoom: string;
-  workDuration: number;   // ticks to work
+  workDuration: number;
   workTimer: number;
-  size: number;           // 0.4-0.7 scale factor
+  size: number;
   seed: number;
   pulseOffset: number;
+  lastTrailX: number;
+  lastTrailY: number;
 }
 
 interface SwarmMission {
   targetRoom: string;
-  agentCount: number;     // 1-5 based on task intensity
+  agentCount: number;
   taskTitle: string;
+}
+
+// Persistent trail points
+interface TrailPoint {
+  x: number;
+  y: number;
+  alpha: number;
+  size: number;
 }
 
 let subAgents: SubAgent[] = [];
@@ -35,10 +45,14 @@ let missionQueue: SwarmMission[] = [];
 let hivemindSprite: AgentSprite | null = null;
 let sceneRef: SceneResult | null = null;
 let swarmContainer: Container | null = null;
+let trailGraphics: Graphics | null = null;
+let overlayContainer: Container | null = null;
+let overlayBg: Graphics | null = null;
+let overlayText: Text | null = null;
+let trailPoints: TrailPoint[] = [];
 let nextId = 0;
 let globalTick = 0;
 
-// Phase durations in ticks (60fps)
 const SPAWN_DURATION = 45;
 const TRAVEL_DURATION = 90;
 const WORK_MIN = 300;
@@ -74,7 +88,7 @@ function drawMiniHivemind(scale: number, seed: number): Container {
   g.circle(0, -bodyH - headR * 0.4, headR);
   g.fill(0xf5d0a9);
 
-  // Eyes — small blue dots (Hivemind signature)
+  // Eyes
   const eyeY = -bodyH - headR * 0.4;
   g.circle(-headR * 0.3, eyeY - 1, 1.2);
   g.fill(0x3b82f6);
@@ -102,18 +116,12 @@ function drawMiniHivemind(scale: number, seed: number): Container {
   c.addChild(hText);
 
   c.addChild(g);
-
-  // Trail particles container
-  const trail = new Graphics();
-  trail.label = "mini-trail";
-  c.addChild(trail);
-
   c.scale.set(scale);
   return c;
 }
 
 // =============================================
-// Easing functions
+// Easing
 // =============================================
 
 function easeOutCubic(t: number): number {
@@ -134,18 +142,44 @@ function easeInOutQuad(t: number): number {
 
 export function initSwarm(scene: SceneResult, parentContainer: Container) {
   sceneRef = scene;
+
+  // Trail layer (below sub-agents)
+  trailGraphics = new Graphics();
+  trailGraphics.label = "hivemind-trails";
+  parentContainer.addChild(trailGraphics);
+
   swarmContainer = new Container();
   swarmContainer.label = "hivemind-swarm";
   parentContainer.addChild(swarmContainer);
 
-  // Find Hivemind agent sprite
+  // Activity overlay (top-right corner)
+  overlayContainer = new Container();
+  overlayContainer.label = "hivemind-overlay";
+  overlayContainer.position.set(parentContainer.width > 100 ? 16 : 16, 8);
+  overlayContainer.alpha = 0;
+  parentContainer.addChild(overlayContainer);
+
+  overlayBg = new Graphics();
+  overlayContainer.addChild(overlayBg);
+
+  overlayText = new Text({
+    text: "",
+    style: new TextStyle({
+      fontSize: 9,
+      fontFamily: "monospace",
+      fill: 0x93c5fd,
+      lineHeight: 14,
+    }),
+  });
+  overlayText.position.set(8, 6);
+  overlayContainer.addChild(overlayText);
+
   hivemindSprite = scene.agentSprites.find(
     (s) => s.agent.name.toLowerCase() === "hivemind"
   ) || null;
 }
 
 export function dispatchSwarm(targetRoom: string, taskTitle: string, intensity: number = 1) {
-  // Scale sub-agent count with intensity: 1-5
   const count = Math.max(1, Math.min(5, Math.ceil(intensity)));
   missionQueue.push({ targetRoom, agentCount: count, taskTitle });
 }
@@ -155,15 +189,12 @@ export function triggerSwarmFromAssignment(
   taskTitle: string,
   agents: Array<{ id: string; name: string; department: string }>
 ) {
-  // Find support/owner agents that aren't Hivemind
   const hivemindAssignment = assignments.find(a => {
     const agent = agents.find(ag => ag.id === a.agent_id);
     return agent?.name.toLowerCase() === "hivemind" && (a.role === "support" || a.role === "owner");
   });
-
   if (!hivemindAssignment) return;
 
-  // Find target departments from non-Hivemind assignments
   const targetDepts = assignments
     .filter(a => a.role === "owner" || a.role === "support")
     .map(a => agents.find(ag => ag.id === a.agent_id)?.department)
@@ -171,14 +202,12 @@ export function triggerSwarmFromAssignment(
 
   const targetRoom = targetDepts[0] || "Architecture";
   const intensity = Math.ceil(hivemindAssignment.fit_score / 25);
-
   dispatchSwarm(targetRoom, taskTitle, intensity);
 }
 
 function spawnSubAgents(mission: SwarmMission) {
   if (!hivemindSprite || !sceneRef || !swarmContainer) return;
 
-  // Find target room position
   const targetRoomData = sceneRef.roomContainers.find(
     (r) => r.name.toLowerCase() === mission.targetRoom.toLowerCase()
   );
@@ -186,8 +215,6 @@ function spawnSubAgents(mission: SwarmMission) {
 
   const originX = hivemindSprite.baseX;
   const originY = hivemindSprite.baseY;
-
-  // Target: center of the room, spread slightly
   const roomCenterX = targetRoomData.container.x + 60;
   const roomCenterY = targetRoomData.y + targetRoomData.h * 0.6;
 
@@ -205,7 +232,7 @@ function spawnSubAgents(mission: SwarmMission) {
       id: nextId++,
       container,
       phase: "spawning",
-      progress: 0,
+      progress: -i * 0.15,
       originX,
       originY,
       targetX: roomCenterX + spread,
@@ -216,10 +243,9 @@ function spawnSubAgents(mission: SwarmMission) {
       size,
       seed,
       pulseOffset: i * 0.7,
+      lastTrailX: originX,
+      lastTrailY: originY,
     };
-
-    // Stagger spawns
-    sub.progress = -i * 0.15;
 
     subAgents.push(sub);
   }
@@ -238,13 +264,15 @@ export function updateSwarm() {
     spawnSubAgents(mission);
   }
 
+  // Fade and render trail points
+  renderTrails();
+
   const alive: SubAgent[] = [];
 
   for (const sub of subAgents) {
-    sub.progress += 1 / getPhraseDuration(sub.phase);
+    sub.progress += 1 / getPhaseDuration(sub.phase);
 
     if (sub.progress < 0) {
-      // Still in stagger delay
       alive.push(sub);
       continue;
     }
@@ -253,16 +281,12 @@ export function updateSwarm() {
 
     switch (sub.phase) {
       case "spawning": {
-        // Emerge from Hivemind with expanding glow
         const et = easeOutCubic(t);
         sub.container.alpha = et;
         sub.container.scale.set(sub.size * et);
-
-        // Slight upward pop
         sub.container.x = sub.originX + (Math.sin(sub.seed * 20) * 8) * et;
         sub.container.y = sub.originY - 15 * et;
 
-        // Glow pulse during spawn
         const glow = sub.container.children.find(c => c.label === "mini-glow");
         if (glow) {
           glow.alpha = 0.3 * et;
@@ -274,26 +298,29 @@ export function updateSwarm() {
       }
 
       case "traveling": {
-        // Smooth arc path to target
         const et = easeInOutQuad(t);
         const startX = sub.originX + (Math.sin(sub.seed * 20) * 8);
         const startY = sub.originY - 15;
-
-        // Bezier-like arc
         const midY = Math.min(startY, sub.targetY) - 40 - sub.seed * 30;
         const oneMinusT = 1 - et;
 
-        sub.container.x = oneMinusT * oneMinusT * startX + 2 * oneMinusT * et * ((startX + sub.targetX) / 2) + et * et * sub.targetX;
-        sub.container.y = oneMinusT * oneMinusT * startY + 2 * oneMinusT * et * midY + et * et * sub.targetY;
+        const newX = oneMinusT * oneMinusT * startX + 2 * oneMinusT * et * ((startX + sub.targetX) / 2) + et * et * sub.targetX;
+        const newY = oneMinusT * oneMinusT * startY + 2 * oneMinusT * et * midY + et * et * sub.targetY;
 
+        sub.container.x = newX;
+        sub.container.y = newY;
         sub.container.alpha = 1;
         sub.container.scale.set(sub.size);
-
-        // Trail effect
-        drawTrail(sub, et);
-
-        // Rotation during travel
         sub.container.rotation = Math.sin(et * Math.PI * 2) * 0.1;
+
+        // Emit trail points every few pixels
+        const dx = newX - sub.lastTrailX;
+        const dy = newY - sub.lastTrailY;
+        if (dx * dx + dy * dy > 36) {
+          trailPoints.push({ x: newX, y: newY, alpha: 0.35, size: 1.8 * sub.size });
+          sub.lastTrailX = newX;
+          sub.lastTrailY = newY;
+        }
 
         if (t >= 1) {
           sub.container.rotation = 0;
@@ -303,26 +330,20 @@ export function updateSwarm() {
       }
 
       case "working": {
-        // Ambient presence at target location
         sub.workTimer++;
         const wt = globalTick + sub.pulseOffset * 60;
-
-        // Gentle floating bob
         sub.container.x = sub.targetX + Math.sin(wt * 0.03) * 3;
         sub.container.y = sub.targetY + Math.sin(wt * 0.025) * 2;
-
-        // Subtle scale pulse (breathing)
         sub.container.scale.set(sub.size * (1 + Math.sin(wt * 0.04) * 0.03));
 
-        // Work glow intensity
         const glow = sub.container.children.find(c => c.label === "mini-glow");
         if (glow) {
           glow.alpha = 0.15 + Math.sin(wt * 0.06) * 0.1;
         }
 
-        // Occasional "data burst" particle
         if (sub.workTimer % 45 === 0) {
-          emitWorkParticle(sub);
+          const gl = sub.container.children.find(c => c.label === "mini-glow");
+          if (gl) { gl.alpha = 0.4; gl.scale.set(1.3); }
         }
 
         if (sub.workTimer >= sub.workDuration) advancePhase(sub);
@@ -330,20 +351,26 @@ export function updateSwarm() {
       }
 
       case "returning": {
-        // Arc path back to Hivemind
         const et = easeInOutQuad(t);
         const midY = Math.min(sub.targetY, sub.originY) - 35 - sub.seed * 20;
         const oneMinusT = 1 - et;
 
-        sub.container.x = oneMinusT * oneMinusT * sub.targetX + 2 * oneMinusT * et * ((sub.targetX + sub.originX) / 2) + et * et * sub.originX;
-        sub.container.y = oneMinusT * oneMinusT * sub.targetY + 2 * oneMinusT * et * midY + et * et * sub.originY;
+        const newX = oneMinusT * oneMinusT * sub.targetX + 2 * oneMinusT * et * ((sub.targetX + sub.originX) / 2) + et * et * sub.originX;
+        const newY = oneMinusT * oneMinusT * sub.targetY + 2 * oneMinusT * et * midY + et * et * sub.originY;
 
+        sub.container.x = newX;
+        sub.container.y = newY;
         sub.container.rotation = Math.sin(et * Math.PI * 2) * -0.08;
-
-        // Fade slightly during return
         sub.container.alpha = 1 - et * 0.2;
 
-        drawTrail(sub, et);
+        // Return trails
+        const dx = newX - sub.lastTrailX;
+        const dy = newY - sub.lastTrailY;
+        if (dx * dx + dy * dy > 36) {
+          trailPoints.push({ x: newX, y: newY, alpha: 0.25, size: 1.4 * sub.size });
+          sub.lastTrailX = newX;
+          sub.lastTrailY = newY;
+        }
 
         if (t >= 1) {
           sub.container.rotation = 0;
@@ -353,15 +380,12 @@ export function updateSwarm() {
       }
 
       case "reabsorbing": {
-        // Shrink and merge into Hivemind
         const et = easeInCubic(t);
-
         sub.container.x = sub.originX;
         sub.container.y = sub.originY;
         sub.container.scale.set(sub.size * (1 - et));
         sub.container.alpha = 1 - et;
 
-        // Bright flash on merge
         const glow = sub.container.children.find(c => c.label === "mini-glow");
         if (glow) {
           glow.alpha = 0.5 * (1 - et);
@@ -373,13 +397,9 @@ export function updateSwarm() {
           swarmContainer?.removeChild(sub.container);
           sub.container.destroy({ children: true });
 
-          // Flash Hivemind's aura on reabsorb
           if (hivemindSprite) {
             const aura = hivemindSprite.container.children.find(c => c.label === "agent-aura");
-            if (aura) {
-              aura.alpha = 0.9;
-              aura.scale.set(1.15);
-            }
+            if (aura) { aura.alpha = 0.9; aura.scale.set(1.15); }
           }
         }
         break;
@@ -394,7 +414,7 @@ export function updateSwarm() {
 
   subAgents = alive;
 
-  // Hivemind subtle glow when subs are active
+  // Hivemind glow when subs are active
   if (hivemindSprite && subAgents.length > 0) {
     const aura = hivemindSprite.container.children.find(c => c.label === "agent-aura");
     if (aura) {
@@ -402,9 +422,82 @@ export function updateSwarm() {
       aura.alpha = Math.max(aura.alpha, 0.3 + intensity * 0.4 + Math.sin(globalTick * 0.05) * 0.1);
     }
   }
+
+  // Update activity overlay
+  updateOverlay();
 }
 
-function getPhraseDuration(phase: SwarmPhase): number {
+// =============================================
+// Persistent blue energy trails
+// =============================================
+
+function renderTrails() {
+  if (!trailGraphics) return;
+  trailGraphics.clear();
+
+  const alive: TrailPoint[] = [];
+  for (const p of trailPoints) {
+    p.alpha -= 0.004; // ~4 second fade
+    p.size *= 0.998;
+    if (p.alpha > 0.01) {
+      alive.push(p);
+      trailGraphics.circle(p.x, p.y, p.size);
+      trailGraphics.fill({ color: 0x3b82f6, alpha: p.alpha });
+
+      // Outer glow ring
+      trailGraphics.circle(p.x, p.y, p.size * 2.5);
+      trailGraphics.fill({ color: 0x3b82f6, alpha: p.alpha * 0.15 });
+    }
+  }
+  trailPoints = alive;
+}
+
+// =============================================
+// Activity overlay
+// =============================================
+
+function updateOverlay() {
+  if (!overlayContainer || !overlayBg || !overlayText) return;
+
+  const activeCount = subAgents.filter(s => s.phase !== "done").length;
+
+  if (activeCount === 0) {
+    overlayContainer.alpha = Math.max(0, overlayContainer.alpha - 0.03);
+    return;
+  }
+
+  overlayContainer.alpha = Math.min(1, overlayContainer.alpha + 0.05);
+
+  // Collect room stats
+  const roomCounts: Record<string, { working: number; traveling: number }> = {};
+  for (const sub of subAgents) {
+    if (sub.phase === "done") continue;
+    if (!roomCounts[sub.targetRoom]) roomCounts[sub.targetRoom] = { working: 0, traveling: 0 };
+    if (sub.phase === "working") roomCounts[sub.targetRoom].working++;
+    else roomCounts[sub.targetRoom].traveling++;
+  }
+
+  let text = `⚡ HIVEMIND  ${activeCount} deployed\n`;
+  for (const [room, counts] of Object.entries(roomCounts)) {
+    const status = counts.working > 0 ? `${counts.working} working` : `${counts.traveling} en route`;
+    text += `  → ${room}: ${status}\n`;
+  }
+
+  overlayText.text = text.trim();
+
+  // Redraw background
+  const bounds = overlayText.getBounds();
+  overlayBg.clear();
+  overlayBg.roundRect(0, 0, bounds.width + 16, bounds.height + 12, 6);
+  overlayBg.fill({ color: 0x0a0f1a, alpha: 0.85 });
+  overlayBg.stroke({ color: 0x3b82f6, width: 0.5, alpha: 0.4 });
+}
+
+// =============================================
+// Helpers
+// =============================================
+
+function getPhaseDuration(phase: SwarmPhase): number {
   switch (phase) {
     case "spawning": return SPAWN_DURATION;
     case "traveling": return TRAVEL_DURATION;
@@ -417,33 +510,11 @@ function getPhraseDuration(phase: SwarmPhase): number {
 function advancePhase(sub: SubAgent) {
   sub.progress = 0;
   switch (sub.phase) {
-    case "spawning": sub.phase = "traveling"; break;
+    case "spawning": sub.phase = "traveling"; sub.lastTrailX = sub.container.x; sub.lastTrailY = sub.container.y; break;
     case "traveling": sub.phase = "working"; break;
-    case "working": sub.phase = "returning"; break;
+    case "working": sub.phase = "returning"; sub.lastTrailX = sub.container.x; sub.lastTrailY = sub.container.y; break;
     case "returning": sub.phase = "reabsorbing"; break;
     case "reabsorbing": sub.phase = "done"; break;
-  }
-}
-
-function drawTrail(sub: SubAgent, _t: number) {
-  const trail = sub.container.children.find(c => c.label === "mini-trail") as Graphics | undefined;
-  if (!trail) return;
-  trail.clear();
-
-  // Small trailing dots
-  for (let i = 1; i <= 3; i++) {
-    const alpha = 0.15 / i;
-    const offset = i * 4;
-    trail.circle(-offset * Math.sign(sub.targetX - sub.originX), offset * 0.3, 1.2 / i);
-    trail.fill({ color: 0x3b82f6, alpha });
-  }
-}
-
-function emitWorkParticle(sub: SubAgent) {
-  const glow = sub.container.children.find(c => c.label === "mini-glow");
-  if (glow) {
-    glow.alpha = 0.4;
-    glow.scale.set(1.3);
   }
 }
 
@@ -453,9 +524,7 @@ export function getActiveSubAgentCount(): number {
 
 export function resetSwarm() {
   for (const sub of subAgents) {
-    if (sub.container.parent) {
-      sub.container.parent.removeChild(sub.container);
-    }
+    if (sub.container.parent) sub.container.parent.removeChild(sub.container);
     sub.container.destroy({ children: true });
   }
   subAgents = [];
@@ -463,6 +532,11 @@ export function resetSwarm() {
   hivemindSprite = null;
   sceneRef = null;
   swarmContainer = null;
+  trailGraphics = null;
+  trailPoints = [];
+  overlayContainer = null;
+  overlayBg = null;
+  overlayText = null;
   nextId = 0;
   globalTick = 0;
 }

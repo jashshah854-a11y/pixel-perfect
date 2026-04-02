@@ -4,11 +4,10 @@ import { Layout } from "@/components/Layout";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
 import { AssignmentFeed } from "@/components/AssignmentFeed";
-import { CollaborationPanel } from "@/components/CollaborationPanel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Zap, Users, Brain } from "lucide-react";
+import { Plus, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 const columns = [
@@ -23,6 +22,8 @@ export default function TasksPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [filterAgent, setFilterAgent] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
+  const [dragTaskId, setDragTaskId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["tasks"],
@@ -51,22 +52,29 @@ export default function TasksPage() {
   const totalTokens = agents?.reduce((sum, a) => sum + a.tokens_used, 0) || 0;
   const agentMap = Object.fromEntries((agents || []).map((a) => [a.id, a.name]));
 
+  const updateTaskStatus = useMutation({
+    mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
+      const update: Record<string, unknown> = { status };
+      if (status === "done") update.completed_at = new Date().toISOString();
+      await supabase.from("tasks").update(update).eq("id", taskId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
   const createTask = useMutation({
     mutationFn: async (task: { title: string; description: string; priority: string; assigned_to: string | null; source: string }) => {
       const { data, error } = await supabase.from("tasks").insert(task).select("id").single();
       if (error) throw error;
-      // Auto-assign via edge function
       try {
         const { data: result } = await supabase.functions.invoke("assign-task", { body: { task_id: data.id } });
         toast.success("Task created & auto-assigned to best-fit agent");
-        // Dispatch office claim animation
         if (result?.owner) {
           window.dispatchEvent(new CustomEvent("agent-claim", {
             detail: { agentId: result.owner, taskTitle: task.title }
           }));
         }
-
-        // Dispatch Hivemind swarm if Hivemind is involved
         if (result?.assignments) {
           const hivemindEntry = result.assignments.find(
             (a: { agent_id: string; role: string }) => {
@@ -101,6 +109,39 @@ export default function TasksPage() {
     if (filterPriority && t.priority !== filterPriority) return false;
     return true;
   });
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((taskId: string) => {
+    setDragTaskId(taskId);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, columnKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDropTarget(columnKey);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDropTarget(null);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, columnKey: string) => {
+    e.preventDefault();
+    setDropTarget(null);
+    if (dragTaskId) {
+      const task = tasks?.find(t => t.id === dragTaskId);
+      if (task && task.status !== columnKey) {
+        updateTaskStatus.mutate({ taskId: dragTaskId, status: columnKey });
+        toast.success(`Task moved to ${columns.find(c => c.key === columnKey)?.label}`);
+      }
+    }
+    setDragTaskId(null);
+  }, [dragTaskId, tasks, updateTaskStatus]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragTaskId(null);
+    setDropTarget(null);
+  }, []);
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
@@ -137,17 +178,44 @@ export default function TasksPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {columns.map((col) => {
               const colTasks = filtered?.filter((t) => t.status === col.key) || [];
+              const isOver = dropTarget === col.key;
               return (
-                <div key={col.key} className="space-y-2">
+                <div
+                  key={col.key}
+                  className={`space-y-2 rounded-lg p-2 transition-all duration-200 ${
+                    isOver
+                      ? "bg-primary/10 ring-2 ring-primary/40 ring-inset"
+                      : dragTaskId
+                        ? "bg-muted/30 ring-1 ring-border/50 ring-inset"
+                        : ""
+                  }`}
+                  onDragOver={(e) => handleDragOver(e, col.key)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, col.key)}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-sm font-medium text-muted-foreground">{col.label}</h3>
                     <span className="text-xs font-mono text-muted-foreground">{colTasks.length}</span>
                   </div>
                   {colTasks.length === 0 ? (
-                    <p className="text-xs text-muted-foreground p-3 border border-dashed rounded-lg text-center">No tasks</p>
+                    <p className={`text-xs text-muted-foreground p-3 border border-dashed rounded-lg text-center transition-colors ${
+                      isOver ? "border-primary/40 text-primary" : ""
+                    }`}>
+                      {isOver ? "Drop here" : "No tasks"}
+                    </p>
                   ) : (
                     colTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} agentName={agentMap[task.assigned_to || ""] || undefined} />
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={() => handleDragStart(task.id)}
+                        onDragEnd={handleDragEnd}
+                        className={`cursor-grab active:cursor-grabbing transition-all duration-150 ${
+                          dragTaskId === task.id ? "opacity-40 scale-95" : ""
+                        }`}
+                      >
+                        <TaskCard task={task} agentName={agentMap[task.assigned_to || ""] || undefined} />
+                      </div>
                     ))
                   )}
                 </div>
@@ -156,22 +224,13 @@ export default function TasksPage() {
           </div>
         )}
 
-        {/* Intelligence Panels */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Zap className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-medium">Assignment Log</h3>
-            </div>
-            <AssignmentFeed agentMap={agentMap} taskMap={taskMap} />
+        {/* Assignment Feed */}
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-medium">Assignment Log</h3>
           </div>
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-medium">Agent Collaboration</h3>
-            </div>
-            <CollaborationPanel agentMap={agentMap} />
-          </div>
+          <AssignmentFeed agentMap={agentMap} taskMap={taskMap} />
         </div>
       </div>
 
