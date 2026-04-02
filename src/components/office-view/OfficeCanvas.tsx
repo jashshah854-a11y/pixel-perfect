@@ -31,7 +31,6 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
   const [canvasHeight, setCanvasHeight] = useState(480);
   const [scrolledToDept, setScrolledToDept] = useState<string | null>(null);
 
-  // Build scene when app or agents change
   useEffect(() => {
     if (!app || !app.stage) return;
 
@@ -46,23 +45,18 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       app.stage.addChild(scene.root);
       spritesRef.current = scene.agentSprites;
 
-      // Particle overlay
       const particleLayer = new Graphics();
       app.stage.addChild(particleLayer);
       setParticleGraphics(particleLayer);
 
-      // Set scene ref for ticker
       setSceneRef(scene);
 
-      // Collaboration graph layer
       const collabLayer = new Graphics();
       app.stage.addChild(collabLayer);
       setCollabGraphics(collabLayer);
 
-      // Init Hivemind swarm system
       initSwarm(scene, app.stage);
 
-      // Load active collaborations
       import("@/integrations/supabase/client").then(({ supabase }) => {
         supabase.from("agent_collaborations").select("*").in("status", ["pending", "in_progress"]).then(({ data }) => {
           if (data) updateCollaborations(data);
@@ -77,8 +71,7 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
         (window as any).__collabChannel = channel;
       });
 
-      // Set canvas height and force PixiJS renderer resize
-      const h = getSceneHeight() + 40;
+      const h = getSceneHeight() + 20;
       setCanvasHeight(h);
       requestAnimationFrame(() => {
         if (containerRef.current) {
@@ -86,7 +79,6 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
         }
       });
 
-      // Register wall clocks
       const findClocks = (container: import("pixi.js").Container) => {
         for (const child of container.children) {
           if (child.label === "wall-clock") {
@@ -104,7 +96,6 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       };
       findClocks(scene.root);
 
-      // Wire click handlers for agents
       for (const sprite of scene.agentSprites) {
         sprite.container.on("pointertap", (e) => {
           const bounds = (containerRef.current as HTMLDivElement).getBoundingClientRect();
@@ -114,7 +105,6 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
         });
       }
 
-      // Wire click handlers for department rooms (scroll to them)
       for (const room of scene.roomContainers) {
         room.container.on("pointertap", () => {
           if (wrapperRef.current) {
@@ -124,7 +114,6 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
           }
         });
 
-        // Hover glow effect
         room.container.on("pointerenter", () => {
           const border = room.container.children.find((c) => c.label === "room-border");
           if (border) border.alpha = 1.5;
@@ -138,7 +127,6 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
 
     init();
 
-    // Listen for swarm dispatch events
     const handleSwarm = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.targetRoom && detail?.taskTitle) {
@@ -147,7 +135,6 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       }
     };
 
-    // Listen for agent claim events
     const handleClaim = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.agentId && detail?.taskTitle) {
@@ -165,7 +152,6 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
     };
   }, [app, agents, onAgentClick]);
 
-  // Animation ticker
   useEffect(() => {
     if (!app || !app.ticker) return;
     const tickFn = () => {
@@ -178,7 +164,6 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
     };
   }, [app]);
 
-  // Keyboard handlers for CEO movement
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
     if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) {
@@ -219,14 +204,17 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
   };
 
   return (
-    <div ref={wrapperRef} className="relative max-h-[75vh] overflow-y-auto rounded-xl border border-border/30">
+    <div
+      ref={wrapperRef}
+      className="relative h-full overflow-y-auto overflow-x-hidden rounded-lg border border-border/20"
+      style={{ scrollbarWidth: "thin", scrollbarColor: "hsl(var(--border)) transparent" }}
+    >
       <div
         ref={containerRef}
-        style={{ width: "100%", height: canvasHeight, position: "relative", background: "#0d0d12" }}
+        style={{ width: "100%", height: canvasHeight, position: "relative", background: "#0a0a0e" }}
         className="focus:ring-1 focus:ring-primary/30"
       />
 
-      {/* Back to CEO button */}
       {scrolledToDept && (
         <Button
           size="sm"
