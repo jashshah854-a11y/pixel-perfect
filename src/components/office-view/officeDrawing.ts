@@ -605,21 +605,24 @@ export function drawChair(x: number, y: number, accentColor: number): Container 
   const c = new Container();
   c.position.set(x, y);
 
-  const g = new Graphics();
-  // Wheels shadow
-  g.ellipse(0, 10, 12, 3);
-  g.fill({ color: 0x000000, alpha: 0.1 });
-  // Seat
-  g.ellipse(0, 0, 11, 5);
-  g.fill(blend(accentColor, 0x000000, 0.35));
-  // Back
-  g.roundRect(-9, -14, 18, 12, 4);
-  g.fill(blend(accentColor, 0x000000, 0.25));
-  g.stroke({ color: blend(accentColor, 0xffffff, 0.1), width: 0.4 });
-  // Highlight
-  g.roundRect(-5, -12, 10, 4, 2);
-  g.fill({ color: blend(accentColor, 0xffffff, 0.2), alpha: 0.12 });
-  c.addChild(g);
+  const base = new Graphics();
+  base.ellipse(0, 10, 12, 3);
+  base.fill({ color: 0x000000, alpha: 0.1 });
+  base.ellipse(0, 0, 11, 5);
+  base.fill(blend(accentColor, 0x000000, 0.35));
+  c.addChild(base);
+
+  // Back — separate Graphics to avoid stroke path leak
+  const back = new Graphics();
+  back.roundRect(-9, -14, 18, 12, 4);
+  back.fill(blend(accentColor, 0x000000, 0.25));
+  back.stroke({ color: blend(accentColor, 0xffffff, 0.1), width: 0.4 });
+  c.addChild(back);
+
+  const highlight = new Graphics();
+  highlight.roundRect(-5, -12, 10, 4, 2);
+  highlight.fill({ color: blend(accentColor, 0xffffff, 0.2), alpha: 0.12 });
+  c.addChild(highlight);
 
   return c;
 }
