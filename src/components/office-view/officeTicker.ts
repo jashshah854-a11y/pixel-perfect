@@ -170,104 +170,113 @@ export function animateScene(agentSprites: AgentSprite[]) {
 
   // Animate agents
   for (const { container, agent } of agentSprites) {
+    const personality = getPersonality(agent.id, agent.name);
+
     if (agent.status === "working") {
-      // Subtle bob
       const body = container.children.find((c) => c.label === "sprite-body");
-      if (body) body.y = Math.sin(tick * 0.04) * 1.5;
+      const intensity = personality.focusIntensity;
 
-      // Status dot pulse
+      // Deep work: more focused, less sway, tighter bob
+      if (body) {
+        body.y = Math.sin(tick * 0.04 * intensity) * (1.2 * intensity);
+        // Slight forward lean to show focus
+        body.rotation = -0.015 * intensity;
+      }
+
+      // Status dot pulse — faster for more focused agents
       const dot = container.children.find((c) => c.label === "status-dot");
-      if (dot) dot.alpha = 0.6 + Math.sin(tick * 0.08) * 0.4;
+      if (dot) dot.alpha = 0.6 + Math.sin(tick * 0.08 * personality.decisionSpeed) * 0.4;
 
-      // Aura ring pulse
+      // Aura ring pulse — intensity-scaled
       const aura = container.children.find((c) => c.label === "agent-aura");
       if (aura) {
-        aura.alpha = 0.4 + Math.sin(tick * 0.06) * 0.4;
-        aura.scale.set(1 + Math.sin(tick * 0.03) * 0.04);
+        aura.alpha = 0.3 + Math.sin(tick * 0.06 * intensity) * 0.5;
+        aura.scale.set(1 + Math.sin(tick * 0.03 * intensity) * 0.04);
       }
+
+      // Deep work focus indicator: subtle glow intensifies
+      const focusPhase = Math.sin(tick * 0.02 * intensity);
+      if (body && focusPhase > 0.8) {
+        // Brief "eureka" moments — very subtle scale pulse
+        container.scale.set(1 + focusPhase * 0.003);
+      } else {
+        container.scale.set(1);
+      }
+
     } else if (agent.status === "idle") {
       const body = container.children.find((c) => c.label === "sprite-body");
       const state = getIdleState(agent.id);
 
-      // Background breathing always active
-      container.scale.set(1 + Math.sin(tick * 0.02) * 0.006);
+      // Background breathing — personality-scaled
+      container.scale.set(1 + Math.sin(tick * 0.02 * personality.restlessness) * 0.006);
 
-      // Idle behavior state machine
+      // Idle behavior state machine with personality
       if (state.action === "none") {
-        // Default gentle sway
-        if (body) body.x = Math.sin(tick * 0.015 + state.seed * 100) * 0.6;
-        if (body) body.y = 0;
-        if (body) body.rotation = 0;
+        if (body) {
+          body.x = Math.sin(tick * 0.015 + state.seed * 100) * (0.4 + personality.restlessness * 0.4);
+          body.y = 0;
+          body.rotation = 0;
+        }
 
         state.cooldown--;
         if (state.cooldown <= 0) {
           state.action = pickIdleAction(state.seed);
-          state.timer = ACTION_DURATIONS[state.action];
+          state.timer = Math.round(ACTION_DURATIONS[state.action] * (1 / personality.decisionSpeed));
           state.phase = 0;
         }
       } else {
-        const duration = ACTION_DURATIONS[state.action];
+        const duration = Math.round(ACTION_DURATIONS[state.action] * (1 / personality.decisionSpeed));
         state.phase = 1 - state.timer / duration;
-        const t = bell(state.phase); // smooth rise and fall
+        const t = bell(state.phase);
 
         if (body) {
+          const mag = 0.7 + personality.restlessness * 0.6; // movement magnitude
           switch (state.action) {
             case "look_left":
-              // Head/body slight turn left
-              body.x = -1.8 * t;
-              body.rotation = -0.04 * t;
+              body.x = -1.8 * t * mag;
+              body.rotation = -0.04 * t * mag;
               body.y = 0;
               break;
-
             case "look_right":
-              body.x = 1.8 * t;
-              body.rotation = 0.04 * t;
+              body.x = 1.8 * t * mag;
+              body.rotation = 0.04 * t * mag;
               body.y = 0;
               break;
-
             case "stretch":
-              // Rise up slightly, then settle
-              body.y = -3 * t;
+              body.y = -3 * t * mag;
               body.x = 0;
               body.rotation = 0;
-              // Scale up very slightly for "arms stretching" feel
               container.scale.set(1 + 0.015 * t);
               break;
-
             case "shift_weight":
-              // Lateral lean
-              body.x = Math.sin(state.phase * Math.PI * 2) * 1.5;
+              body.x = Math.sin(state.phase * Math.PI * 2) * 1.5 * mag;
               body.y = Math.abs(Math.sin(state.phase * Math.PI * 2)) * -0.5;
-              body.rotation = Math.sin(state.phase * Math.PI * 2) * 0.02;
+              body.rotation = Math.sin(state.phase * Math.PI * 2) * 0.02 * mag;
               break;
-
             case "lean_back":
-              // Lean backward slightly
-              body.y = -1.5 * t;
+              body.y = -1.5 * t * mag;
               body.x = 0;
-              body.rotation = -0.03 * t;
+              body.rotation = -0.03 * t * mag;
               break;
-
             case "nod":
-              // Quick double nod
-              body.y = Math.sin(state.phase * Math.PI * 3) * -1.2;
+              body.y = Math.sin(state.phase * Math.PI * 3) * -1.2 * mag;
               body.x = 0;
-              body.rotation = Math.sin(state.phase * Math.PI * 3) * -0.015;
+              body.rotation = Math.sin(state.phase * Math.PI * 3) * -0.015 * mag;
               break;
           }
         }
 
         state.timer--;
         if (state.timer <= 0) {
-          // Reset to neutral
           if (body) {
             body.x = 0;
             body.y = 0;
             body.rotation = 0;
           }
           state.action = "none";
-          // Randomized cooldown: 3-8 seconds at 60fps
-          state.cooldown = Math.floor(180 + Math.random() * 300);
+          // Personality-scaled cooldown
+          const baseCooldown = 180 + Math.random() * 300;
+          state.cooldown = Math.floor(baseCooldown * (1.5 - personality.restlessness));
         }
       }
     } else if (agent.status === "paused") {
