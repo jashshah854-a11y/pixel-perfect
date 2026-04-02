@@ -1,4 +1,4 @@
-import { Graphics } from "pixi.js";
+import { Graphics, Text, TextStyle, Container } from "pixi.js";
 import type { AgentSprite, SceneResult } from "./officeScene";
 
 let tick = 0;
