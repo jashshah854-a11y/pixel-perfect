@@ -231,11 +231,6 @@ export function buildScene(
       const desk = drawDesk(deskX, deskY);
       room.addChild(desk);
 
-      // Desk lamp on every other desk
-      if (ai % 2 === 0) {
-        const lamp = drawDeskLamp(deskX + DESK_W - 6, deskY - 2);
-        room.addChild(lamp);
-      }
 
       // Mug position
       mugPositions.push({
