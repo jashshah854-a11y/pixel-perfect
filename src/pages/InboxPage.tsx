@@ -5,6 +5,18 @@ import { InboxMessage } from "@/components/InboxMessage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function InboxPage() {
   const queryClient = useQueryClient();
@@ -51,6 +63,16 @@ export default function InboxPage() {
     },
   });
 
+  const clearAll = useMutation({
+    mutationFn: async () => {
+      await supabase.from("inbox").delete().neq("id", "");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inbox-all"] });
+      queryClient.invalidateQueries({ queryKey: ["inbox-unread"] });
+    },
+  });
+
   const filtered = messages?.filter((m) => {
     if (filterType && m.type !== filterType) return false;
     if (filterAgent && m.from_agent !== filterAgent) return false;
@@ -62,11 +84,36 @@ export default function InboxPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Inbox</h2>
-          {unreadCount > 0 && (
-            <Button size="sm" variant="outline" onClick={() => markAllRead.mutate()}>
-              Mark all read
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button size="sm" variant="outline" onClick={() => markAllRead.mutate()}>
+                Mark all read
+              </Button>
+            )}
+            {messages && messages.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear all messages?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently remove all inbox messages. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => clearAll.mutate()}>
+                      Clear All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2 flex-wrap">

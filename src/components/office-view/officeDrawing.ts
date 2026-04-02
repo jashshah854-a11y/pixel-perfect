@@ -1202,7 +1202,7 @@ export function drawBreakRoom(w: number): Container {
   c.addChild(led);
 
   const label = new Text({
-    text: "NEURAL LOUNGE",
+    text: "NEURAL LOUNGE — REST & RECHARGE",
     style: new TextStyle({
       fontFamily: "Inter, system-ui, sans-serif",
       fontSize: 11,
@@ -1213,6 +1213,16 @@ export function drawBreakRoom(w: number): Container {
   });
   label.position.set(14, 10);
   c.addChild(label);
+
+  // Zen ambient particles (dimmer)
+  const zen = new Graphics();
+  for (let i = 0; i < 8; i++) {
+    const zx = 40 + Math.random() * (w - 80);
+    const zy = 40 + Math.random() * 100;
+    zen.circle(zx, zy, 1 + Math.random() * 1.5);
+    zen.fill({ color: 0xf59e0b, alpha: 0.03 + Math.random() * 0.02 });
+  }
+  c.addChild(zen);
 
   // Coffee machine
   const coffee = drawCoffeeMachine(60, 55);

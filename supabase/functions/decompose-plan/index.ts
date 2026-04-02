@@ -17,26 +17,22 @@ function extractSubtasks(title: string, content: string): { title: string; descr
   
   for (const line of lines) {
     const trimmed = line.trim();
-    // Match markdown headers (## or ###)
     const headerMatch = trimmed.match(/^#{2,3}\s+(.+)/);
     if (headerMatch) {
       bulletItems.push(headerMatch[1]);
       continue;
     }
-    // Match bullet points
     const bulletMatch = trimmed.match(/^[-*]\s+(.+)/);
     if (bulletMatch) {
       bulletItems.push(bulletMatch[1]);
       continue;
     }
-    // Match numbered items
     const numMatch = trimmed.match(/^\d+[.)]\s+(.+)/);
     if (numMatch) {
       bulletItems.push(numMatch[1]);
     }
   }
 
-  // If plan has structured items, use them
   if (bulletItems.length > 0) {
     for (const item of bulletItems.slice(0, 8)) {
       subtasks.push({
@@ -47,7 +43,6 @@ function extractSubtasks(title: string, content: string): { title: string; descr
     }
   }
 
-  // If no structured items found, generate role-based subtasks from the plan title/content
   if (subtasks.length === 0) {
     const roleSubtasks = [
       { check: /ui|frontend|design|interface|visual|page|dashboard/i, title: `Design UI for: ${title}`, keywords: ["ui", "design", "component", "interface"] },
@@ -65,7 +60,6 @@ function extractSubtasks(title: string, content: string): { title: string; descr
       }
     }
 
-    // Always add coordination + QA if we have other subtasks
     if (subtasks.length > 0 && subtasks.length < 6) {
       if (!subtasks.some(s => s.keywords.includes("coordinate"))) {
         subtasks.unshift({ title: `Coordinate: ${title}`, description: `Orchestration for plan: ${title}`, keywords: ["coordinate", "plan", "manage"] });
@@ -75,7 +69,6 @@ function extractSubtasks(title: string, content: string): { title: string; descr
       }
     }
 
-    // Fallback: generate basic decomposition
     if (subtasks.length === 0) {
       subtasks.push(
         { title: `Plan and coordinate: ${title}`, description: `Orchestration`, keywords: ["coordinate", "plan", "manage"] },
@@ -109,11 +102,54 @@ serve(async (req) => {
 
     if (planErr || !plan) throw new Error("Plan not found");
 
+    // Load agents to find Omega
+    const { data: agents } = await supabase.from('agents').select('*');
+    const omega = agents?.find((a: any) => 
+      a.name.toLowerCase() === 'omega' || 
+      a.role.toLowerCase().includes('orchestrat')
+    );
+
     // Extract subtasks
     const subtasks = extractSubtasks(plan.title, plan.markdown_content || "");
 
     // Create tasks and assign each
     const results = [];
+
+    // First: create coordination task owned by Omega
+    if (omega) {
+      const { data: coordTask } = await supabase
+        .from('tasks')
+        .insert({
+          title: `Orchestrate: ${plan.title}`,
+          description: `Omega coordinates execution of plan: ${plan.title}`,
+          priority: 'high',
+          status: 'in_progress',
+          source: 'plan',
+          assigned_to: omega.id,
+        })
+        .select('id')
+        .single();
+
+      if (coordTask) {
+        await supabase.from('task_assignments').insert({
+          task_id: coordTask.id,
+          agent_id: omega.id,
+          role: 'owner',
+          fit_score: 100,
+          reasoning: 'Omega is the primary orchestrator for all plan decomposition and coordination.',
+        });
+
+        results.push({
+          task_id: coordTask.id,
+          title: `Orchestrate: ${plan.title}`,
+          owner: omega.id,
+          owner_name: omega.name,
+          assignments: [{ agent_id: omega.id, role: 'owner' }],
+        });
+      }
+    }
+
+    // Then: create and assign subtasks
     for (const sub of subtasks) {
       const { data: task, error: taskErr } = await supabase
         .from('tasks')
@@ -129,7 +165,6 @@ serve(async (req) => {
 
       if (taskErr || !task) continue;
 
-      // Call assign-task for each subtask
       const assignUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/assign-task`;
       const assignRes = await fetch(assignUrl, {
         method: 'POST',
@@ -145,6 +180,7 @@ serve(async (req) => {
         task_id: task.id,
         title: sub.title,
         owner: assignData.owner || null,
+        owner_name: assignData.owner_name || null,
         assignments: assignData.assignments || [],
       });
     }
@@ -152,10 +188,11 @@ serve(async (req) => {
     // Update plan status to executing
     await supabase.from('plans').update({ status: 'executing' }).eq('id', plan_id);
 
-    // Inbox notification
+    // Inbox notification from Omega
+    const fromAgent = omega?.id || 'omega';
     await supabase.from('inbox').insert({
-      from_agent: 'hivemind',
-      message: `Plan "${plan.title}" decomposed into ${results.length} subtasks and assigned across the team.`,
+      from_agent: fromAgent,
+      message: `Omega received your plan "${plan.title}" and distributed ${results.length} tasks across the team.`,
       type: 'plan_decompose',
     });
 

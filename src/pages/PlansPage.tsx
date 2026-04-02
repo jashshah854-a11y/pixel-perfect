@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, Bot } from "lucide-react";
 import { format } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
@@ -49,11 +49,11 @@ export default function PlansPage() {
     mutationFn: async () => {
       const { data, error } = await supabase.from("plans").insert({ title, markdown_content: content }).select("id").single();
       if (error) throw error;
-      // Auto-decompose into subtasks and assign
+      // Auto-decompose via Omega
       try {
         const { data: result } = await supabase.functions.invoke("decompose-plan", { body: { plan_id: data.id } });
         if (result?.subtasks?.length > 0) {
-          toast.success(`Plan decomposed into ${result.subtasks.length} subtasks and assigned`);
+          toast.success(`Omega decomposed plan into ${result.subtasks.length} subtasks`);
           // Trigger office claim events for each assigned subtask
           for (const sub of result.subtasks) {
             if (sub.owner) {
@@ -64,7 +64,7 @@ export default function PlansPage() {
           }
         }
       } catch {
-        toast.info("Plan created. Auto-decomposition pending.");
+        toast.info("Plan created. Omega orchestration pending.");
       }
     },
     onSuccess: () => {
@@ -109,6 +109,11 @@ export default function PlansPage() {
                   <div className="flex items-center gap-3">
                     <span className="font-medium">{plan.title}</span>
                     <StatusBadge value={plan.status} />
+                    {plan.status === "executing" && (
+                      <span className="flex items-center gap-1 text-[10px] text-primary">
+                        <Bot className="h-3 w-3" /> Sent to Omega
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground">{format(new Date(plan.created_at), "MMM d, yyyy")}</span>
