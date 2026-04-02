@@ -27,10 +27,6 @@ const typeConfig: Record<string, { label: string; icon: typeof ArrowRight; color
   review: { label: "Review", icon: Eye, color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
 };
 
-const statusIcons: Record<string, typeof CheckCircle> = {
-  completed: CheckCircle,
-};
-
 export function CollaborationPanel({ agentMap }: CollaborationPanelProps) {
   const { data: collabs, refetch } = useQuery({
     queryKey: ["agent-collaborations"],

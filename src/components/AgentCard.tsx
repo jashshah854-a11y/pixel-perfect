@@ -93,6 +93,16 @@ export function AgentCard({ agent, compact, onStatusChange, onAssignTask }: Agen
             <Brain className="h-3 w-3" />
             Memory
           </button>
+          {agent.status === "idle" && (
+            <button
+              onClick={triggerResearch}
+              disabled={researching}
+              className="text-xs rounded bg-muted px-2.5 py-1.5 hover:bg-muted/80 flex items-center gap-1 disabled:opacity-50"
+            >
+              <BookOpen className="h-3 w-3" />
+              {researching ? "..." : "Research"}
+            </button>
+          )}
         </div>
       )}
 

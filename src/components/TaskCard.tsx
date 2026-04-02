@@ -2,7 +2,7 @@ import { StatusBadge } from "./StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CheckCircle, Brain } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 
 interface TaskCardProps {
   task: {
