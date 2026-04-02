@@ -53,6 +53,13 @@ export function SystemHealthPanel() {
     },
   });
 
+  const { data: externalActions } = useQuery({
+    queryKey: ["external-actions"],
+    queryFn: async () => {
+      const { data } = await supabase.from("external_actions").select("*").order("created_at", { ascending: false }).limit(5);
+      return data || [];
+    },
+  });
   // Simulate failure detection based on task states
   useEffect(() => {
     if (!tasks || !agents) return;
