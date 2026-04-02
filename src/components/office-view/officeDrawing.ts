@@ -1,10 +1,11 @@
-import { Graphics, Text, TextStyle, Container } from "pixi.js";
+import { Graphics, Text, TextStyle, Container, Sprite } from "pixi.js";
 
 // === Constants ===
 const DESK_W = 72;
 const DESK_H = 38;
 const AGENT_RADIUS = 20;
 const CEO_RADIUS = 28;
+const SPRITE_H = 52; // character sprite display height
 
 const AGENT_COLORS: Record<string, number> = {
   hivemind: 0x3b82f6,
@@ -191,171 +192,85 @@ export function drawChair(x: number, y: number, accentColor: number): Container 
   return c;
 }
 
-// === Agent Avatar (Humanoid Figure) ===
+// === Agent Avatar (pixel art sprite) ===
 export function drawAgent(
   name: string,
   status: string,
   x: number,
-  y: number
+  y: number,
+  spriteNum: number = 1,
 ): Container {
   const c = new Container();
   c.position.set(x, y);
   c.label = `agent-${name}`;
 
   const color = getAgentColor(name);
-  const isOffline = status === "offline";
-  const baseAlpha = isOffline ? 0.35 : 1;
 
   // Ground shadow
   const shadow = new Graphics();
-  shadow.ellipse(0, 22, 12, 4);
-  shadow.fill({ color: 0x000000, alpha: 0.18 * baseAlpha });
+  shadow.ellipse(0, SPRITE_H + 2, SPRITE_H * 0.38, 5);
+  shadow.fill({ color: 0x000000, alpha: 0.22 });
   c.addChild(shadow);
 
-  // Aura (for working status)
+  // Working aura
   if (status === "working") {
     const aura = new Graphics();
-    aura.ellipse(0, 0, 18, 24);
-    aura.fill({ color: 0x22c55e, alpha: 0.08 });
+    aura.roundRect(-SPRITE_H / 2 - 5, -5, SPRITE_H + 10, SPRITE_H + 10, 8);
+    aura.fill({ color: 0x22c55e, alpha: 0.07 });
+    aura.roundRect(-SPRITE_H / 2 - 3, -3, SPRITE_H + 6, SPRITE_H + 6, 6);
+    aura.stroke({ color: 0x22c55e, width: 1, alpha: 0.25 });
     aura.label = "agent-aura";
     c.addChild(aura);
   }
 
-  // --- Legs ---
-  const legs = new Graphics();
-  legs.alpha = baseAlpha;
-  // Left leg
-  legs.roundRect(-7, 10, 5, 14, 2);
-  legs.fill(0x1e293b);
-  // Right leg
-  legs.roundRect(2, 10, 5, 14, 2);
-  legs.fill(0x1e293b);
-  // Shoes
-  legs.roundRect(-8, 22, 7, 3, 1.5);
-  legs.fill(0x27272a);
-  legs.roundRect(1, 22, 7, 3, 1.5);
-  legs.fill(0x27272a);
-  c.addChild(legs);
-
-  // --- Body / Torso ---
-  const body = new Graphics();
-  body.alpha = baseAlpha;
-  // Main torso
-  body.roundRect(-10, -8, 20, 20, 5);
-  body.fill(color);
-  // Shirt highlight
-  body.roundRect(-8, -6, 16, 8, 3);
-  body.fill({ color: 0xffffff, alpha: 0.1 });
-  // Collar
-  body.moveTo(-3, -8);
-  body.lineTo(0, -5);
-  body.lineTo(3, -8);
-  body.stroke({ width: 1, color: blend(color, 0xffffff, 0.3), alpha: 0.5 });
-  c.addChild(body);
-
-  // --- Arms ---
-  const arms = new Graphics();
-  arms.alpha = baseAlpha;
-  // Left arm
-  arms.roundRect(-14, -6, 5, 16, 2.5);
-  arms.fill(blend(color, 0x000000, 0.15));
-  // Left hand
-  arms.circle(-11.5, 11, 3);
-  arms.fill(0xf0c8a0);
-  // Right arm
-  arms.roundRect(9, -6, 5, 16, 2.5);
-  arms.fill(blend(color, 0x000000, 0.15));
-  // Right hand
-  arms.circle(11.5, 11, 3);
-  arms.fill(0xf0c8a0);
-  c.addChild(arms);
-
-  // --- Head ---
-  const head = new Graphics();
-  head.alpha = baseAlpha;
-  // Neck
-  head.roundRect(-3, -12, 6, 6, 2);
-  head.fill(0xf0c8a0);
-  // Head shape
-  head.circle(0, -20, 11);
-  head.fill(0xf0c8a0);
-  // Hair — short cap style, NOT side tufts
-  const hairColor = blend(color, 0x1a1a2e, 0.6);
-  // Top hair cap
-  head.arc(0, -20, 11.5, -Math.PI * 0.85, -Math.PI * 0.15);
-  head.fill(hairColor);
-  // Fringe/bangs
-  head.roundRect(-9, -29, 18, 5, 3);
-  head.fill(hairColor);
-  c.addChild(head);
-
-  // --- Face ---
-  const face = new Graphics();
-  face.alpha = baseAlpha;
-  // Eyes — bigger, friendlier
-  face.circle(-4, -20, 2.5);
-  face.fill(0xffffff);
-  face.circle(4, -20, 2.5);
-  face.fill(0xffffff);
-  // Pupils
-  face.circle(-3.5, -20, 1.2);
-  face.fill(0x2d2d3f);
-  face.circle(4.5, -20, 1.2);
-  face.fill(0x2d2d3f);
-  // Eye shine
-  face.circle(-3, -20.8, 0.6);
-  face.fill({ color: 0xffffff, alpha: 0.8 });
-  face.circle(5, -20.8, 0.6);
-  face.fill({ color: 0xffffff, alpha: 0.8 });
-  // Mouth
-  if (status === "working") {
-    // Smile
-    face.arc(0, -16, 3, 0.1, Math.PI - 0.1);
-    face.stroke({ width: 0.8, color: 0x8b6b52 });
-  } else if (status === "offline") {
-    // Sleeping mouth
-    face.moveTo(-2, -16);
-    face.lineTo(2, -16);
-    face.stroke({ width: 0.8, color: 0x8b6b52 });
-  } else {
-    // Neutral
-    face.arc(0, -17, 2, 0.2, Math.PI - 0.2);
-    face.stroke({ width: 0.7, color: 0x8b6b52 });
+  // Paused ring
+  if (status === "paused") {
+    const pauseGlow = new Graphics();
+    pauseGlow.roundRect(-SPRITE_H / 2 - 3, -3, SPRITE_H + 6, SPRITE_H + 6, 6);
+    pauseGlow.stroke({ color: 0xeab308, width: 1, alpha: 0.3 });
+    pauseGlow.label = "agent-pause-glow";
+    c.addChild(pauseGlow);
   }
-  // Blush
-  face.ellipse(-6, -17, 2, 1.2);
-  face.fill({ color: 0xe8a0a0, alpha: 0.2 });
-  face.ellipse(6, -17, 2, 1.2);
-  face.fill({ color: 0xe8a0a0, alpha: 0.2 });
-  c.addChild(face);
 
-  // Status dot
+  // Pixel art sprite
+  const sprite = Sprite.from(`/sprites/${spriteNum}-D-1.png`);
+  sprite.anchor.set(0.5, 0);
+  sprite.width = SPRITE_H;
+  sprite.height = SPRITE_H;
+  if (status === "offline") sprite.alpha = 0.35;
+  sprite.label = "sprite-body";
+  c.addChild(sprite);
+
+  // Status dot (top-right)
   const dot = new Graphics();
-  dot.circle(12, -28, 4);
+  dot.circle(SPRITE_H / 2 - 1, 3, 4.5);
   dot.fill(STATUS_COLORS[status] || 0x71717a);
-  dot.stroke({ color: 0x0a0a0a, width: 1.5 });
+  dot.stroke({ color: 0x0d0d12, width: 1.5 });
   dot.label = "status-dot";
   c.addChild(dot);
 
-  // Name label below
+  // Name label
   const label = new Text({
     text: name,
     style: new TextStyle({
       fontFamily: "Inter, system-ui, sans-serif",
       fontSize: 9,
-      fill: 0xa1a1aa,
-      fontWeight: "500",
+      fill: status === "offline" ? 0x52525b : blend(color, 0xffffff, 0.35),
+      fontWeight: "600",
+      letterSpacing: 0.3,
     }),
   });
   label.anchor.set(0.5, 0);
-  label.position.set(0, 26);
-  label.alpha = baseAlpha;
+  label.position.set(0, SPRITE_H + 6);
+  if (status === "offline") label.alpha = 0.4;
   c.addChild(label);
 
-  // Make interactive
   c.eventMode = "static";
   c.cursor = "pointer";
-  c.hitArea = { contains: (px: number, py: number) => px > -16 && px < 16 && py > -32 && py < 28 };
+  c.hitArea = {
+    contains: (px: number, py: number) =>
+      px >= -SPRITE_H / 2 && px <= SPRITE_H / 2 && py >= 0 && py <= SPRITE_H,
+  };
 
   return c;
 }

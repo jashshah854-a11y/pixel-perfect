@@ -70,6 +70,14 @@ function roomHeight(agentCount: number, roomW: number): number {
   return ROOM_HEADER_H + rows * SLOT_H + ROOM_BOTTOM_PAD;
 }
 
+function hashSpriteNum(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  return (hash % 14) + 1;
+}
+
 let lastSceneHeight = 480;
 
 export function buildScene(
@@ -205,7 +213,8 @@ export function buildScene(
 
       const agentX = deskX + DESK_W / 2;
       const agentY = deskY + DESK_H + 50;
-      const agentContainer = drawAgent(agent.name, agent.status, agentX, agentY);
+      const spriteNum = hashSpriteNum(agent.id);
+      const agentContainer = drawAgent(agent.name, agent.status, agentX, agentY, spriteNum);
       room.addChild(agentContainer);
 
       agentSprites.push({

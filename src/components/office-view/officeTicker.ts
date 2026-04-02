@@ -61,8 +61,10 @@ export function animateScene(agentSprites: AgentSprite[]) {
     } else if (agent.status === "idle") {
       container.scale.set(1 + Math.sin(tick * 0.02) * 0.008);
     } else if (agent.status === "paused") {
-      const body = container.children[1];
-      if (body) body.alpha = 0.7 + Math.sin(tick * 0.05) * 0.3;
+      const pauseGlow = container.children.find((c) => c.label === "agent-pause-glow");
+      if (pauseGlow) pauseGlow.alpha = 0.5 + Math.sin(tick * 0.05) * 0.5;
+      const spriteBody = container.children.find((c) => c.label === "sprite-body");
+      if (spriteBody) spriteBody.alpha = 0.75 + Math.sin(tick * 0.04) * 0.25;
     }
   }
 
