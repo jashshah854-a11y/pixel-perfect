@@ -4,10 +4,11 @@ import { Layout } from "@/components/Layout";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
 import { AssignmentFeed } from "@/components/AssignmentFeed";
+import { IntentPreview } from "@/components/IntentPreview";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Zap } from "lucide-react";
+import { Plus, Zap, Brain, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { playClaimChime, playDropConfirm } from "@/lib/sounds";
 
@@ -25,6 +26,7 @@ export default function TasksPage() {
   const [filterPriority, setFilterPriority] = useState("");
   const [dragTaskId, setDragTaskId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [expandedIntentId, setExpandedIntentId] = useState<string | null>(null);
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["tasks"],
@@ -112,7 +114,6 @@ export default function TasksPage() {
     return true;
   });
 
-  // Drag and drop handlers
   const handleDragStart = useCallback((taskId: string) => {
     setDragTaskId(taskId);
   }, []);
@@ -208,16 +209,34 @@ export default function TasksPage() {
                     </p>
                   ) : (
                     colTasks.map((task) => (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={() => handleDragStart(task.id)}
-                        onDragEnd={handleDragEnd}
-                        className={`cursor-grab active:cursor-grabbing transition-all duration-150 ${
-                          dragTaskId === task.id ? "opacity-40 scale-95" : ""
-                        }`}
-                      >
-                        <TaskCard task={task} agentName={agentMap[task.assigned_to || ""] || undefined} />
+                      <div key={task.id}>
+                        <div
+                          draggable
+                          onDragStart={() => handleDragStart(task.id)}
+                          onDragEnd={handleDragEnd}
+                          className={`cursor-grab active:cursor-grabbing transition-all duration-150 ${
+                            dragTaskId === task.id ? "opacity-40 scale-95" : ""
+                          }`}
+                        >
+                          <TaskCard task={task} agentName={agentMap[task.assigned_to || ""] || undefined} />
+                          {/* Intent toggle */}
+                          {task.assigned_to && task.status === "in_progress" && (
+                            <button
+                              onClick={() => setExpandedIntentId(expandedIntentId === task.id ? null : task.id)}
+                              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors mt-1 ml-1"
+                            >
+                              <Brain className="h-2.5 w-2.5" />
+                              Intent
+                              {expandedIntentId === task.id ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
+                            </button>
+                          )}
+                        </div>
+                        {/* Intent Preview */}
+                        {expandedIntentId === task.id && (
+                          <div className="mt-1.5 animate-fade-in">
+                            <IntentPreview taskId={task.id} agentMap={agentMap} />
+                          </div>
+                        )}
                       </div>
                     ))
                   )}

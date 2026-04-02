@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { StatusBadge } from "@/components/StatusBadge";
+import { PlanPreview } from "@/components/PlanPreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +19,7 @@ export default function PlansPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
 
   const { data: plans, isLoading } = useQuery({
     queryKey: ["plans"],
@@ -49,12 +51,10 @@ export default function PlansPage() {
     mutationFn: async () => {
       const { data, error } = await supabase.from("plans").insert({ title, markdown_content: content }).select("id").single();
       if (error) throw error;
-      // Auto-decompose via Omega
       try {
         const { data: result } = await supabase.functions.invoke("decompose-plan", { body: { plan_id: data.id } });
         if (result?.subtasks?.length > 0) {
           toast.success(`Omega decomposed plan into ${result.subtasks.length} subtasks`);
-          // Trigger office claim events for each assigned subtask
           for (const sub of result.subtasks) {
             if (sub.owner) {
               window.dispatchEvent(new CustomEvent("agent-claim", {
@@ -74,6 +74,7 @@ export default function PlansPage() {
       setTitle("");
       setContent("");
       setFormOpen(false);
+      setShowPreview(false);
     },
   });
 
@@ -83,6 +84,13 @@ export default function PlansPage() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["plans"] }),
   });
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    // Show preview instead of immediate submission
+    setShowPreview(true);
+  };
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
@@ -145,28 +153,38 @@ export default function PlansPage() {
         )}
       </div>
 
-      <Sheet open={formOpen} onOpenChange={setFormOpen}>
+      <Sheet open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setShowPreview(false); }}>
         <SheetContent className="bg-card border-border">
           <SheetHeader>
             <SheetTitle>New Plan</SheetTitle>
           </SheetHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (title.trim()) createPlan.mutate();
-            }}
-            className="mt-4 space-y-4"
-          >
-            <div>
-              <label className="text-sm text-muted-foreground">Title</label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Plan title" />
+
+          {!showPreview ? (
+            <form onSubmit={handleFormSubmit} className="mt-4 space-y-4">
+              <div>
+                <label className="text-sm text-muted-foreground">Title</label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Plan title" />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Content (Markdown)</label>
+                <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write your plan..." className="min-h-[200px]" />
+              </div>
+              <Button type="submit" className="w-full" disabled={!title.trim()}>
+                Preview Execution
+              </Button>
+            </form>
+          ) : (
+            <div className="mt-4">
+              <PlanPreview
+                title={title}
+                content={content}
+                agents={agents || []}
+                onConfirm={() => createPlan.mutate()}
+                onCancel={() => setShowPreview(false)}
+                isSubmitting={createPlan.isPending}
+              />
             </div>
-            <div>
-              <label className="text-sm text-muted-foreground">Content (Markdown)</label>
-              <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write your plan..." className="min-h-[200px]" />
-            </div>
-            <Button type="submit" className="w-full">Create Plan</Button>
-          </form>
+          )}
         </SheetContent>
       </Sheet>
     </Layout>

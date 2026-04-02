@@ -5,10 +5,12 @@ import { OfficeCanvas } from "@/components/office-view/OfficeCanvas";
 import { OfficeChat } from "@/components/OfficeChat";
 import { QuickTaskPanel } from "@/components/QuickTaskPanel";
 import { KnowledgeLog } from "@/components/KnowledgeLog";
+import { SystemHealthPanel } from "@/components/SystemHealthPanel";
+import { ExecutiveSummary } from "@/components/ExecutiveSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
-import { Zap, Brain, X } from "lucide-react";
+import { Zap, Brain, X, Activity, Shield, ChevronDown, ChevronUp } from "lucide-react";
 
 interface SelectedAgent {
   agent: {
@@ -24,9 +26,11 @@ interface SelectedAgent {
   y: number;
 }
 
+type OverlayPanel = "none" | "health" | "executive" | "knowledge";
+
 export default function OfficePage() {
   const [selected, setSelected] = useState<SelectedAgent | null>(null);
-  const [showKnowledge, setShowKnowledge] = useState(false);
+  const [activePanel, setActivePanel] = useState<OverlayPanel>("none");
 
   const { data: agents, isLoading } = useQuery({
     queryKey: ["agents"],
@@ -55,19 +59,42 @@ export default function OfficePage() {
     []
   );
 
+  const togglePanel = (panel: OverlayPanel) => {
+    setActivePanel(prev => prev === panel ? "none" : panel);
+  };
+
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Agent Office</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Button
               size="sm"
-              variant="outline"
-              onClick={() => setShowKnowledge(!showKnowledge)}
+              variant={activePanel === "health" ? "default" : "outline"}
+              onClick={() => togglePanel("health")}
+              className="h-7 text-xs"
             >
-              <Brain className="h-3.5 w-3.5 mr-1" />
-              {showKnowledge ? "Hide" : "Knowledge"}
+              <Activity className="h-3 w-3 mr-1" />
+              Health
+            </Button>
+            <Button
+              size="sm"
+              variant={activePanel === "executive" ? "default" : "outline"}
+              onClick={() => togglePanel("executive")}
+              className="h-7 text-xs"
+            >
+              <Shield className="h-3 w-3 mr-1" />
+              Summary
+            </Button>
+            <Button
+              size="sm"
+              variant={activePanel === "knowledge" ? "default" : "outline"}
+              onClick={() => togglePanel("knowledge")}
+              className="h-7 text-xs"
+            >
+              <Brain className="h-3 w-3 mr-1" />
+              Knowledge
             </Button>
             <Button
               size="sm"
@@ -80,16 +107,19 @@ export default function OfficePage() {
                   detail: { targetRoom: target, taskTitle: `Support ${target} team`, intensity }
                 }));
               }}
+              className="h-7 text-xs"
             >
-              <Zap className="h-3.5 w-3.5 mr-1" /> Deploy Hivemind
+              <Zap className="h-3 w-3 mr-1" /> Hivemind
             </Button>
           </div>
         </div>
 
-        {/* Knowledge Log Panel */}
-        {showKnowledge && agents && (
-          <div className="rounded-lg border border-border/40 bg-card/60 p-4">
-            <KnowledgeLog agents={agents} />
+        {/* Collapsible Panel */}
+        {activePanel !== "none" && agents && (
+          <div className="rounded-lg border border-border/40 bg-card/80 backdrop-blur-sm p-4 animate-fade-in">
+            {activePanel === "health" && <SystemHealthPanel />}
+            {activePanel === "executive" && <ExecutiveSummary />}
+            {activePanel === "knowledge" && <KnowledgeLog agents={agents} />}
           </div>
         )}
 
