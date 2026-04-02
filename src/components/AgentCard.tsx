@@ -23,10 +23,10 @@ interface AgentCardProps {
 }
 
 const statusDot: Record<string, string> = {
-  working: "bg-green-400",
-  idle: "bg-zinc-500",
+  working: "bg-status-working status-dot--active",
+  idle: "bg-status-idle",
   paused: "bg-yellow-400",
-  offline: "bg-red-400",
+  offline: "bg-status-blocked",
 };
 
 export function AgentCard({ agent, compact, onStatusChange, onAssignTask }: AgentCardProps) {
@@ -45,30 +45,35 @@ export function AgentCard({ agent, compact, onStatusChange, onAssignTask }: Agen
   };
 
   return (
-    <div className="rounded-lg border bg-card p-4 space-y-3">
+    <div className="interactive-card p-4 space-y-3 group">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${statusDot[agent.status] || "bg-zinc-500"}`} />
-          <span className="font-medium">{agent.name}</span>
+        <div className="flex items-center gap-2.5">
+          <span className={`status-dot ${statusDot[agent.status] || "bg-status-idle"}`} />
+          <span className="font-medium text-sm group-hover:text-foreground transition-colors duration-fast">
+            {agent.name}
+          </span>
         </div>
         <StatusBadge value={agent.department} />
       </div>
 
-      {!compact && <p className="text-sm text-muted-foreground">{agent.role}</p>}
+      {!compact && (
+        <p className="text-sm text-muted-foreground leading-relaxed">{agent.role}</p>
+      )}
 
       {agent.current_task && (
-        <p className="text-sm truncate text-muted-foreground">
-          📌 {agent.current_task}
+        <p className="text-sm truncate text-muted-foreground flex items-center gap-1.5">
+          <span className="h-1 w-1 rounded-full bg-primary/60 shrink-0" />
+          {agent.current_task}
         </p>
       )}
 
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span className="font-mono">{agent.tokens_used.toLocaleString()} tokens</span>
+        <span className="font-mono tabular-nums">{agent.tokens_used.toLocaleString()} tokens</span>
         {!compact && onStatusChange && (
           <select
             value={agent.status}
             onChange={(e) => onStatusChange(agent.id, e.target.value)}
-            className="bg-secondary rounded px-2 py-1 text-xs text-foreground border-none outline-none"
+            className="bg-secondary rounded-md px-2 py-1 text-xs text-foreground border-none outline-none cursor-pointer hover:bg-secondary/80 transition-colors duration-fast"
           >
             <option value="idle">Idle</option>
             <option value="working">Working</option>
@@ -79,27 +84,27 @@ export function AgentCard({ agent, compact, onStatusChange, onAssignTask }: Agen
       </div>
 
       {!compact && onAssignTask && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-1">
           <button
             onClick={() => onAssignTask(agent.id)}
-            className="flex-1 text-xs rounded bg-primary/10 text-primary py-1.5 hover:bg-primary/20"
+            className="flex-1 text-xs font-medium rounded-md bg-primary/10 text-primary py-2 hover:bg-primary/20 press-effect transition-colors duration-fast"
           >
             Assign Task
           </button>
           <button
             onClick={() => setShowMemory(!showMemory)}
-            className="text-xs rounded bg-muted px-2.5 py-1.5 hover:bg-muted/80 flex items-center gap-1"
+            className="text-xs rounded-md bg-muted px-3 py-2 hover:bg-muted/80 flex items-center gap-1.5 press-effect transition-colors duration-fast"
           >
-            <Brain className="h-3 w-3" />
+            <Brain className="h-3.5 w-3.5" />
             Memory
           </button>
           {agent.status === "idle" && (
             <button
               onClick={triggerResearch}
               disabled={researching}
-              className="text-xs rounded bg-muted px-2.5 py-1.5 hover:bg-muted/80 flex items-center gap-1 disabled:opacity-50"
+              className="text-xs rounded-md bg-muted px-3 py-2 hover:bg-muted/80 flex items-center gap-1.5 press-effect transition-colors duration-fast disabled:opacity-50"
             >
-              <BookOpen className="h-3 w-3" />
+              <BookOpen className="h-3.5 w-3.5" />
               {researching ? "..." : "Research"}
             </button>
           )}
@@ -107,7 +112,7 @@ export function AgentCard({ agent, compact, onStatusChange, onAssignTask }: Agen
       )}
 
       {showMemory && (
-        <div className="pt-2 border-t border-border/50">
+        <div className="pt-3 border-t border-border/30 enter-fade">
           <AgentMemoryView agentId={agent.id} agentName={agent.name} />
         </div>
       )}
