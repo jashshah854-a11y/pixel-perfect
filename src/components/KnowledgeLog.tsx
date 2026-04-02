@@ -89,6 +89,31 @@ export function KnowledgeLog({ agents }: KnowledgeLogProps) {
         ))}
       </select>
 
+      {/* Learning Trajectory */}
+      {Object.keys(agentTrajectory).length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-medium text-muted-foreground">Learning Trajectory</p>
+          <div className="flex gap-2 flex-wrap">
+            {agents.filter(a => agentTrajectory[a.id]).map(a => {
+              const t = agentTrajectory[a.id];
+              const barWidth = Math.min((t.count / Math.max(...Object.values(agentTrajectory).map(v => v.count), 1)) * 100, 100);
+              return (
+                <div key={a.id} className="flex items-center gap-1.5 text-[10px]">
+                  <span className="w-14 truncate text-muted-foreground">{a.name}</span>
+                  <div className="w-16 h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${barWidth}%` }} />
+                  </div>
+                  <span className="font-mono text-muted-foreground">{t.count}</span>
+                  <span className={`font-mono ${t.avgConf >= 0.7 ? "text-emerald-400" : "text-amber-400"}`}>
+                    {(t.avgConf * 100).toFixed(0)}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
         {tasks.map((task) => {
           const taskAssigns = (assignments || []).filter((a) => a.task_id === task.id);
