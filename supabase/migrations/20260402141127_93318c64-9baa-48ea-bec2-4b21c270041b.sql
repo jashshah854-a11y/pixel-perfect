@@ -1,0 +1,1 @@
+UPDATE public.tool_connections SET status = 'active' WHERE id IN ('gmail-secondary', 'pace-email');
