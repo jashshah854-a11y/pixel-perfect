@@ -9,6 +9,7 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { playClaimChime, playDropConfirm } from "@/lib/sounds";
 
 const columns = [
   { key: "queued", label: "Queued" },
