@@ -53,6 +53,17 @@ export function KnowledgeLog({ agents }: KnowledgeLogProps) {
     ? (memories.reduce((s, m) => s + m.confidence, 0) / memories.length).toFixed(2)
     : "0";
 
+  // Learning trajectory: per-agent memory count and avg confidence
+  const agentTrajectory: Record<string, { count: number; avgConf: number }> = {};
+  for (const m of memories || []) {
+    if (!agentTrajectory[m.agent_id]) agentTrajectory[m.agent_id] = { count: 0, avgConf: 0 };
+    agentTrajectory[m.agent_id].count += 1;
+    agentTrajectory[m.agent_id].avgConf += m.confidence;
+  }
+  for (const id of Object.keys(agentTrajectory)) {
+    agentTrajectory[id].avgConf = agentTrajectory[id].avgConf / agentTrajectory[id].count;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
