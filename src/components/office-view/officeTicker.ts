@@ -297,6 +297,9 @@ export function animateScene(agentSprites: AgentSprite[]) {
   // Wall clocks
   if (tick % 60 === 0) updateWallClocks();
 
+  // Collaboration graph
+  renderCollabGraph(agentSprites);
+
   // Claim notifications
   updateClaimNotifications(agentSprites);
 }
