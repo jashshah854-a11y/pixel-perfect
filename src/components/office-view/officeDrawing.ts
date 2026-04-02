@@ -302,7 +302,7 @@ export function drawAgent(
   const body = new Graphics();
   const headY = -6;
   drawHumanoidBody(body, color, headY);
-  drawHumanoidFace(body, status, hairColor, headY);
+  drawHumanoidFace(body, status, hairColor, headY, hashName(name));
   if (status === "offline") body.alpha = 0.3;
   body.label = "sprite-body";
   c.addChild(body);
