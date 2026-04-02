@@ -96,7 +96,10 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
   // Animation ticker
   useEffect(() => {
     if (!app || !app.ticker) return;
-    const tickFn = () => animateScene(spritesRef.current);
+    const tickFn = () => {
+      animateScene(spritesRef.current);
+      updateSwarm();
+    };
     app.ticker.add(tickFn);
     return () => {
       app.ticker?.remove(tickFn);
