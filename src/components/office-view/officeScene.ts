@@ -1,4 +1,4 @@
-import { Container } from "pixi.js";
+import { Container, Graphics } from "pixi.js";
 import {
   drawRoom, drawDesk, drawAgent, drawChair, drawWallClock,
   drawCEO, drawCollabTable, drawHallway, drawBreakRoom, drawBed,
