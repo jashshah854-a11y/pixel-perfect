@@ -58,6 +58,12 @@ export default function TasksPage() {
       try {
         const { data: result } = await supabase.functions.invoke("assign-task", { body: { task_id: data.id } });
         toast.success("Task created & auto-assigned to best-fit agent");
+        // Dispatch office claim animation
+        if (result?.owner) {
+          window.dispatchEvent(new CustomEvent("agent-claim", {
+            detail: { agentId: result.owner, taskTitle: task.title }
+          }));
+        }
 
         // Dispatch Hivemind swarm if Hivemind is involved
         if (result?.assignments) {
