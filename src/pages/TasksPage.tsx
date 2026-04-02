@@ -56,8 +56,26 @@ export default function TasksPage() {
       if (error) throw error;
       // Auto-assign via edge function
       try {
-        await supabase.functions.invoke("assign-task", { body: { task_id: data.id } });
+        const { data: result } = await supabase.functions.invoke("assign-task", { body: { task_id: data.id } });
         toast.success("Task created & auto-assigned to best-fit agent");
+
+        // Dispatch Hivemind swarm if Hivemind is involved
+        if (result?.assignments) {
+          const hivemindEntry = result.assignments.find(
+            (a: { agent_id: string; role: string }) => {
+              const agent = agents?.find(ag => ag.id === a.agent_id);
+              return agent?.name.toLowerCase() === "hivemind" && (a.role === "support" || a.role === "owner");
+            }
+          );
+          if (hivemindEntry) {
+            const ownerAgent = result.assignments.find((a: { role: string }) => a.role === "owner");
+            const targetDept = agents?.find(ag => ag.id === ownerAgent?.agent_id)?.department || "Architecture";
+            const intensity = Math.ceil((hivemindEntry.fit_score || 50) / 25);
+            window.dispatchEvent(new CustomEvent("hivemind-dispatch", {
+              detail: { targetRoom: targetDept, taskTitle: task.title, intensity }
+            }));
+          }
+        }
       } catch {
         toast.info("Task created. Auto-assignment pending.");
       }

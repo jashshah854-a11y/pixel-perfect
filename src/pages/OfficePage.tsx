@@ -4,7 +4,9 @@ import { Layout } from "@/components/Layout";
 import { OfficeCanvas } from "@/components/office-view/OfficeCanvas";
 import { OfficeChat } from "@/components/OfficeChat";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
+import { Zap } from "lucide-react";
 
 interface SelectedAgent {
   agent: {
@@ -53,7 +55,23 @@ export default function OfficePage() {
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Agent Office</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Agent Office</h2>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const depts = ["Architecture", "UI/UX", "Research", "Review", "DevOps"];
+              const target = depts[Math.floor(Math.random() * depts.length)];
+              const intensity = Math.ceil(Math.random() * 4) + 1;
+              window.dispatchEvent(new CustomEvent("hivemind-dispatch", {
+                detail: { targetRoom: target, taskTitle: `Support ${target} team`, intensity }
+              }));
+            }}
+          >
+            <Zap className="h-3.5 w-3.5 mr-1" /> Deploy Hivemind
+          </Button>
+        </div>
 
         {isLoading ? (
           <Skeleton className="h-[420px] rounded-xl" />

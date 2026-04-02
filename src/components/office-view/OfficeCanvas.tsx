@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { useOfficePixiRuntime } from "./useOfficePixiRuntime";
 import { buildScene, getSceneHeight, type AgentSprite } from "./officeScene";
 import { animateScene, resetTick, registerClock, keyState, setSceneRef, setParticleGraphics } from "./officeTicker";
+import { initSwarm, updateSwarm, resetSwarm, dispatchSwarm } from "./hivemindSwarm";
 import { Graphics } from "pixi.js";
 
 interface Agent {
@@ -33,6 +34,7 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
       if (!app.stage) return;
       app.stage.removeChildren();
       resetTick();
+      resetSwarm();
 
       const width = app.screen.width;
       const scene = buildScene(agents, width);
@@ -46,6 +48,9 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
 
       // Set scene ref for ticker
       setSceneRef(scene);
+
+      // Init Hivemind swarm system
+      initSwarm(scene, app.stage);
 
       // Set canvas height and force PixiJS renderer resize
       const h = getSceneHeight() + 40;
@@ -86,12 +91,28 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
     };
 
     init();
+
+    // Listen for swarm dispatch events
+    const handleSwarm = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.targetRoom && detail?.taskTitle) {
+        dispatchSwarm(detail.targetRoom, detail.taskTitle, detail.intensity || 2);
+      }
+    };
+    window.addEventListener("hivemind-dispatch", handleSwarm);
+
+    return () => {
+      window.removeEventListener("hivemind-dispatch", handleSwarm);
+    };
   }, [app, agents, onAgentClick]);
 
   // Animation ticker
   useEffect(() => {
     if (!app || !app.ticker) return;
-    const tickFn = () => animateScene(spritesRef.current);
+    const tickFn = () => {
+      animateScene(spritesRef.current);
+      updateSwarm();
+    };
     app.ticker.add(tickFn);
     return () => {
       app.ticker?.remove(tickFn);
