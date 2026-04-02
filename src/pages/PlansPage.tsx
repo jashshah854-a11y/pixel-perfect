@@ -119,8 +119,35 @@ export default function PlansPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Plans</h2>
-          <Button size="sm" onClick={() => setFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> New Plan
+          <div className="flex items-center gap-2">
+            {plans && plans.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear all plans?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently remove all plans. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => clearAllPlans.mutate()}>
+                      Clear All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <Button size="sm" onClick={() => setFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> New Plan
+            </Button>
+          </div>
+        </div>
           </Button>
         </div>
 
