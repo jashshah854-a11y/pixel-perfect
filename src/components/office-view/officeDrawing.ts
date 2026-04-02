@@ -222,14 +222,14 @@ export function drawAgent(
     acc.circle(2, headY - 15, 1.5);
     acc.fill(0xf59e0b);
   } else if (dl === "research") {
-    acc.moveTo(-8, headY + 14);
-    acc.lineTo(0, headY + 19);
-    acc.lineTo(8, headY + 14);
-    acc.lineTo(6, headY + 16);
-    acc.lineTo(0, headY + 21);
-    acc.lineTo(-6, headY + 16);
-    acc.closePath();
-    acc.fill({ color: 0xfafafa, alpha: 0.8 });
+    // Small magnifying glass accessory
+    acc.circle(8, headY + 16, 4);
+    acc.stroke({ color: 0x10b981, width: 1.2, alpha: 0.6 });
+    acc.moveTo(11, headY + 19);
+    acc.lineTo(14, headY + 22);
+    acc.stroke({ color: 0x10b981, width: 1.5, alpha: 0.5 });
+    acc.circle(8, headY + 16, 1.5);
+    acc.fill({ color: 0x10b981, alpha: 0.15 });
   } else if (dl === "review") {
     acc.moveTo(6, headY + 16);
     acc.lineTo(11, headY + 14);
