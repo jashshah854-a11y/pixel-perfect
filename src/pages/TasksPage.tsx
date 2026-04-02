@@ -3,10 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
+import { AssignmentFeed } from "@/components/AssignmentFeed";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Zap } from "lucide-react";
+import { toast } from "sonner";
 
 const columns = [
   { key: "queued", label: "Queued" },
