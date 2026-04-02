@@ -39,7 +39,7 @@ const ROOM_HEADER_H = 52;
 const SLOT_W = 110;
 const SLOT_H = 160;
 const ROOM_BOTTOM_PAD = 20;
-const CEO_OFFICE_H = 240;
+const CEO_OFFICE_H = 360;
 const HALLWAY_H = 36;
 const EDGE_PAD = 16;
 
@@ -81,6 +81,126 @@ function hashSpriteNum(id: string): number {
 
 let lastSceneHeight = 480;
 
+// Helper: draw multi-monitor command wall
+function drawCommandWall(g: Graphics, x: number, y: number, w: number) {
+  // 5 screens arranged in an arc
+  const screens = 5;
+  const sw = 34, sh = 22;
+  const totalW = screens * (sw + 4);
+  const startX = x - totalW / 2;
+  for (let i = 0; i < screens; i++) {
+    const sx = startX + i * (sw + 4);
+    g.roundRect(sx, y, sw, sh, 2);
+    g.fill(0x0a0a0e);
+    g.stroke({ color: 0x3b82f6, width: 0.5, alpha: 0.25 });
+    g.roundRect(sx + 2, y + 2, sw - 4, sh - 4, 1);
+    g.fill({ color: 0x0d1b2a, alpha: 0.9 });
+    // Simulated data lines
+    for (let l = 0; l < 3; l++) {
+      const lw = 6 + (i * 3 + l * 7) % 12;
+      g.roundRect(sx + 4, y + 5 + l * 5, lw, 2, 1);
+      g.fill({ color: 0x3b82f6, alpha: 0.15 + (l * 0.05) });
+    }
+  }
+  // Monitor glow
+  g.ellipse(x, y + sh + 4, totalW / 2, 8);
+  g.fill({ color: 0x3b82f6, alpha: 0.03 });
+}
+
+// Helper: draw CEO personal desk
+function drawCEODesk(g: Graphics, x: number, y: number) {
+  // L-shaped executive desk
+  g.roundRect(x - 45, y, 90, 35, 4);
+  g.fill(0x18181b);
+  g.roundRect(x - 43, y + 2, 86, 31, 3);
+  g.fill(0x1e1e22);
+  g.stroke({ color: 0xf59e0b, width: 0.3, alpha: 0.15 });
+  // Side extension
+  g.roundRect(x + 42, y + 5, 20, 25, 3);
+  g.fill(0x1e1e22);
+  g.stroke({ color: 0x27272a, width: 0.4 });
+  // Desktop items
+  // Triple monitor
+  for (let i = 0; i < 3; i++) {
+    const mx = x - 28 + i * 24;
+    g.roundRect(mx, y - 16, 20, 14, 2);
+    g.fill(0x0a0a0e);
+    g.stroke({ color: 0x27272a, width: 0.6 });
+    g.roundRect(mx + 2, y - 14, 16, 10, 1);
+    g.fill({ color: 0x0d1b2a, alpha: 0.95 });
+  }
+  // Keyboard
+  g.roundRect(x - 14, y + 8, 28, 8, 2);
+  g.fill(0x18181b);
+  g.stroke({ color: 0x27272a, width: 0.4 });
+  // Notepad
+  g.roundRect(x + 46, y + 8, 10, 14, 1);
+  g.fill(0x1c1c20);
+  g.stroke({ color: 0x27272a, width: 0.3 });
+}
+
+// Helper: draw status board
+function drawStatusBoard(g: Graphics, x: number, y: number) {
+  g.roundRect(x - 28, y, 56, 36, 3);
+  g.fill(0x0c0c10);
+  g.stroke({ color: 0x3b82f6, width: 0.6, alpha: 0.3 });
+  // Title bar
+  g.roundRect(x - 26, y + 2, 52, 8, 1);
+  g.fill({ color: 0x3b82f6, alpha: 0.12 });
+  // Status rows
+  for (let i = 0; i < 3; i++) {
+    const ry = y + 14 + i * 7;
+    g.circle(x - 20, ry + 2, 2);
+    g.fill({ color: [0x22c55e, 0xeab308, 0x3b82f6][i], alpha: 0.6 });
+    g.roundRect(x - 14, ry, 30 - i * 4, 3, 1);
+    g.fill({ color: 0xffffff, alpha: 0.06 });
+  }
+}
+
+// Draw large central meeting table with 8 chairs
+function drawMeetingTable(fullW: number, y: number): Container {
+  const c = new Container();
+  c.label = "meeting-table";
+
+  const g = new Graphics();
+  // Table shadow
+  g.ellipse(0, 8, 100, 14);
+  g.fill({ color: 0x000000, alpha: 0.08 });
+  // Table surface — large oval
+  g.ellipse(0, 0, 90, 22);
+  g.fill(0x18181b);
+  g.ellipse(0, 0, 88, 20);
+  g.fill(0x1e1e22);
+  g.stroke({ color: 0x27272a, width: 0.5 });
+  // Surface details
+  g.ellipse(0, 0, 70, 15);
+  g.stroke({ color: 0x3b82f6, width: 0.2, alpha: 0.06 });
+  // Center holographic projector
+  g.circle(0, 0, 6);
+  g.fill({ color: 0x3b82f6, alpha: 0.08 });
+  g.circle(0, 0, 3);
+  g.fill({ color: 0x3b82f6, alpha: 0.15 });
+  g.circle(0, 0, 1.5);
+  g.fill({ color: 0x3b82f6, alpha: 0.3 });
+  c.addChild(g);
+
+  // 8 chairs around the table
+  const chairPositions = [
+    { x: -65, y: -12 }, { x: -25, y: -28 }, { x: 25, y: -28 }, { x: 65, y: -12 },
+    { x: -65, y: 16 }, { x: -25, y: 32 }, { x: 25, y: 32 }, { x: 65, y: 16 },
+  ];
+  for (const pos of chairPositions) {
+    const ch = new Graphics();
+    ch.ellipse(pos.x, pos.y, 8, 4);
+    ch.fill({ color: 0x1e1e22, alpha: 0.8 });
+    ch.stroke({ color: 0x27272a, width: 0.4 });
+    c.addChild(ch);
+  }
+
+  c.position.set(fullW / 2, y);
+  return c;
+}
+
 export function buildScene(
   agents: Agent[],
   parentWidth: number
@@ -94,45 +214,89 @@ export function buildScene(
 
   const fullW = parentWidth - EDGE_PAD * 2;
 
-  // === CEO War Room ===
+  // === CEO WAR ROOM — Expanded with 3 zones ===
   const ceoRoom = drawRoom("CEO WAR ROOM — JASH", fullW, CEO_OFFICE_H, 0xf59e0b);
   ceoRoom.position.set(EDGE_PAD, cursorY);
   root.addChild(ceoRoom);
 
-  // Rug
-  const rug = drawRug(fullW / 2, CEO_OFFICE_H / 2 + 20, 100, 35, 0xf59e0b);
+  // Zone boundaries
+  const leftZoneW = Math.floor(fullW * 0.25);
+  const centerStart = leftZoneW;
+  const rightZoneStart = Math.floor(fullW * 0.75);
+  const centerW = rightZoneStart - centerStart;
+
+  // --- LEFT ZONE: Personal CEO Office ---
+  // Golden rug
+  const rug = drawRug(leftZoneW / 2, CEO_OFFICE_H / 2 + 30, 60, 25, 0xf59e0b);
   ceoRoom.addChild(rug);
 
-  // Ceiling lights
-  ceoRoom.addChild(drawCeilingLight(fullW * 0.25, 36, 0xf59e0b));
-  ceoRoom.addChild(drawCeilingLight(fullW * 0.75, 36, 0xf59e0b));
+  // CEO desk with triple monitors
+  const deskG = new Graphics();
+  drawCEODesk(deskG, leftZoneW / 2, CEO_OFFICE_H / 2 - 10);
+  ceoRoom.addChild(deskG);
 
-  // Multi-monitor wall (3 screens at the top)
-  const monWall = new Graphics();
-  const mwY = 38;
-  for (let i = 0; i < 3; i++) {
-    const mwX = fullW / 2 - 70 + i * 50;
-    monWall.roundRect(mwX, mwY, 40, 24, 2);
-    monWall.fill(0x0a0a0e);
-    monWall.stroke({ color: 0xf59e0b, width: 0.5, alpha: 0.2 });
-    monWall.roundRect(mwX + 2, mwY + 2, 36, 20, 1);
-    monWall.fill({ color: 0x0d1b2a, alpha: 0.9 });
-  }
-  monWall.label = "ceo-monitor-wall";
-  ceoRoom.addChild(monWall);
-
-  // Collab table
-  const collabTable = drawCollabTable(fullW / 2, CEO_OFFICE_H / 2 + 20);
-  ceoRoom.addChild(collabTable);
-
-  // CEO avatar
-  const ceoAvatar = drawCEO(fullW / 2, CEO_OFFICE_H / 2 - 20);
+  // CEO avatar (positioned at personal desk)
+  const ceoAvatar = drawCEO(leftZoneW / 2, CEO_OFFICE_H / 2 + 50);
   ceoRoom.addChild(ceoAvatar);
 
+  // Ceiling lights for CEO zone
+  ceoRoom.addChild(drawCeilingLight(leftZoneW / 2, 36, 0xf59e0b));
+
+  // --- CENTER ZONE: Large Meeting Space ---
+  // Overhead lighting
+  ceoRoom.addChild(drawCeilingLight(centerStart + centerW / 2 - 40, 36, 0xf59e0b));
+  ceoRoom.addChild(drawCeilingLight(centerStart + centerW / 2 + 40, 36, 0xf59e0b));
+
+  // Command wall (multi-monitor display)
+  const cmdWallG = new Graphics();
+  drawCommandWall(cmdWallG, centerStart + centerW / 2, 42, centerW);
+  ceoRoom.addChild(cmdWallG);
+
+  // Large meeting table with 8 chairs
+  const meetingTable = drawMeetingTable(centerW, CEO_OFFICE_H / 2 + 40);
+  meetingTable.position.set(centerStart + centerW / 2, CEO_OFFICE_H / 2 + 40);
+  ceoRoom.addChild(meetingTable);
+
+  // Whiteboard on center wall
+  const wb = drawWhiteboard(centerStart + centerW / 2 - 60, 58);
+  ceoRoom.addChild(wb);
+
+  // --- RIGHT ZONE: Command Console ---
+  // Status boards
+  const sbG = new Graphics();
+  drawStatusBoard(sbG, rightZoneStart + (fullW - rightZoneStart) / 2, 50);
+  drawStatusBoard(sbG, rightZoneStart + (fullW - rightZoneStart) / 2, 100);
+  ceoRoom.addChild(sbG);
+
+  // Holographic activity indicator
+  const holoG = new Graphics();
+  const hx = rightZoneStart + (fullW - rightZoneStart) / 2;
+  holoG.circle(hx, CEO_OFFICE_H - 60, 18);
+  holoG.stroke({ color: 0x3b82f6, width: 0.8, alpha: 0.2 });
+  holoG.circle(hx, CEO_OFFICE_H - 60, 12);
+  holoG.stroke({ color: 0x3b82f6, width: 0.5, alpha: 0.15 });
+  holoG.circle(hx, CEO_OFFICE_H - 60, 6);
+  holoG.fill({ color: 0x3b82f6, alpha: 0.1 });
+  holoG.label = "holo-indicator";
+  ceoRoom.addChild(holoG);
+
+  // Ceiling light for right zone
+  ceoRoom.addChild(drawCeilingLight(rightZoneStart + (fullW - rightZoneStart) / 2, 36, 0x3b82f6));
+
+  // Zone divider lines (subtle)
+  const divG = new Graphics();
+  divG.moveTo(leftZoneW, 38);
+  divG.lineTo(leftZoneW, CEO_OFFICE_H - 8);
+  divG.stroke({ color: 0xf59e0b, width: 0.3, alpha: 0.1 });
+  divG.moveTo(rightZoneStart, 38);
+  divG.lineTo(rightZoneStart, CEO_OFFICE_H - 8);
+  divG.stroke({ color: 0xf59e0b, width: 0.3, alpha: 0.1 });
+  ceoRoom.addChild(divG);
+
   const ceoBounds = {
-    x: EDGE_PAD + 30,
+    x: EDGE_PAD + 10,
     y: cursorY + 40,
-    w: fullW - 60,
+    w: fullW - 20,
     h: CEO_OFFICE_H - 60,
   };
 
@@ -188,6 +352,8 @@ export function buildScene(
 
     const room = drawRoom(dept.name, clampedRoomW, rh, dept.tint);
     room.position.set(rx, ry);
+    room.eventMode = "static";
+    room.cursor = "pointer";
     root.addChild(room);
 
     roomContainers.push({ container: room, y: ry, h: rh, name: dept.name });
@@ -197,8 +363,8 @@ export function buildScene(
     room.addChild(clock);
 
     // Whiteboard
-    const wb = drawWhiteboard(clampedRoomW - 44, 30);
-    room.addChild(wb);
+    const rwb = drawWhiteboard(clampedRoomW - 44, 30);
+    room.addChild(rwb);
 
     // Ceiling light
     room.addChild(drawCeilingLight(clampedRoomW / 2, 38, dept.tint));
@@ -230,7 +396,6 @@ export function buildScene(
 
       const desk = drawDesk(deskX, deskY);
       room.addChild(desk);
-
 
       // Mug position
       mugPositions.push({
@@ -269,7 +434,7 @@ export function buildScene(
 
   for (const rh of rowHeights) cursorY += rh + ROOM_GAP;
 
-  // === Neural Lounge ===
+  // === Neural Lounge — REST & RECHARGE ===
   cursorY += ROOM_GAP;
   const breakRoom = drawBreakRoom(fullW);
   breakRoom.position.set(EDGE_PAD, cursorY);

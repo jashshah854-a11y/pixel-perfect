@@ -1,0 +1,1 @@
+CREATE POLICY "Public delete inbox" ON public.inbox FOR DELETE USING (true);

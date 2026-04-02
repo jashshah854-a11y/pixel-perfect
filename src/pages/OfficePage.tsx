@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { OfficeCanvas } from "@/components/office-view/OfficeCanvas";
 import { OfficeChat } from "@/components/OfficeChat";
+import { QuickTaskPanel } from "@/components/QuickTaskPanel";
+import { KnowledgeLog } from "@/components/KnowledgeLog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
-import { Zap } from "lucide-react";
+import { Zap, Brain, X } from "lucide-react";
 
 interface SelectedAgent {
   agent: {
@@ -24,6 +26,7 @@ interface SelectedAgent {
 
 export default function OfficePage() {
   const [selected, setSelected] = useState<SelectedAgent | null>(null);
+  const [showKnowledge, setShowKnowledge] = useState(false);
 
   const { data: agents, isLoading } = useQuery({
     queryKey: ["agents"],
@@ -57,21 +60,38 @@ export default function OfficePage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Agent Office</h2>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              const depts = ["Architecture", "UI/UX", "Research", "Review", "DevOps"];
-              const target = depts[Math.floor(Math.random() * depts.length)];
-              const intensity = Math.ceil(Math.random() * 4) + 1;
-              window.dispatchEvent(new CustomEvent("hivemind-dispatch", {
-                detail: { targetRoom: target, taskTitle: `Support ${target} team`, intensity }
-              }));
-            }}
-          >
-            <Zap className="h-3.5 w-3.5 mr-1" /> Deploy Hivemind
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowKnowledge(!showKnowledge)}
+            >
+              <Brain className="h-3.5 w-3.5 mr-1" />
+              {showKnowledge ? "Hide" : "Knowledge"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const depts = ["Architecture", "UI/UX", "Research", "Review", "DevOps"];
+                const target = depts[Math.floor(Math.random() * depts.length)];
+                const intensity = Math.ceil(Math.random() * 4) + 1;
+                window.dispatchEvent(new CustomEvent("hivemind-dispatch", {
+                  detail: { targetRoom: target, taskTitle: `Support ${target} team`, intensity }
+                }));
+              }}
+            >
+              <Zap className="h-3.5 w-3.5 mr-1" /> Deploy Hivemind
+            </Button>
+          </div>
         </div>
+
+        {/* Knowledge Log Panel */}
+        {showKnowledge && agents && (
+          <div className="rounded-lg border border-border/40 bg-card/60 p-4">
+            <KnowledgeLog agents={agents} />
+          </div>
+        )}
 
         {isLoading ? (
           <Skeleton className="h-[420px] rounded-xl" />
@@ -127,6 +147,9 @@ export default function OfficePage() {
 
         {agents && <OfficeChat agents={agents} />}
       </div>
+
+      {/* Quick Task Assignment Panel */}
+      <QuickTaskPanel />
     </Layout>
   );
 }

@@ -1,11 +1,12 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Building2, Bot, ListTodo, FileText, Inbox, Volume2, VolumeX } from "lucide-react";
+import { Building2, Bot, ListTodo, FileText, Inbox, Volume2, VolumeX, PanelLeftOpen } from "lucide-react";
 import { isMuted, setMuted } from "@/lib/sounds";
+
 const navItems = [
   { label: "Office", path: "/", icon: Building2 },
-  { label: "Agents", path: "/agents", icon: Bot },
   { label: "Tasks", path: "/tasks", icon: ListTodo },
+  { label: "Agents", path: "/agents", icon: Bot },
   { label: "Plans", path: "/plans", icon: FileText },
   { label: "Inbox", path: "/inbox", icon: Inbox },
 ];
@@ -19,6 +20,9 @@ interface LayoutProps {
 export function Layout({ children, totalTokens = 0, unreadCount = 0 }: LayoutProps) {
   const location = useLocation();
   const [soundOff, setSoundOff] = useState(isMuted());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
 
   const toggleSound = () => {
     const next = !soundOff;
@@ -26,10 +30,40 @@ export function Layout({ children, totalTokens = 0, unreadCount = 0 }: LayoutPro
     setMuted(next);
   };
 
+  // Close sidebar when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        sidebarOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(e.target as Node) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target as Node)
+      ) {
+        setSidebarOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [sidebarOpen]);
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-52 flex-col border-r bg-sidebar-background">
+    <div className="min-h-screen flex flex-col md:flex-row relative">
+      {/* Hover trigger zone — left edge */}
+      <div
+        ref={triggerRef}
+        className="hidden md:block fixed left-0 top-0 bottom-0 w-4 z-50"
+        onMouseEnter={() => setSidebarOpen(true)}
+      />
+
+      {/* Slide-out sidebar */}
+      <aside
+        ref={sidebarRef}
+        className={`hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-52 flex-col border-r bg-sidebar-background/95 backdrop-blur-sm shadow-xl transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        onMouseLeave={() => setSidebarOpen(false)}
+      >
         <div className="p-4 border-b border-sidebar-border">
           <h1 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">Agent Office</h1>
         </div>
@@ -40,6 +74,7 @@ export function Layout({ children, totalTokens = 0, unreadCount = 0 }: LayoutPro
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors ${
                   active
                     ? "bg-sidebar-accent text-primary font-medium"
@@ -68,6 +103,15 @@ export function Layout({ children, totalTokens = 0, unreadCount = 0 }: LayoutPro
           </button>
         </div>
       </aside>
+
+      {/* Sidebar toggle button — always visible on desktop */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="hidden md:flex fixed top-3 left-3 z-30 p-2 rounded-md bg-card/80 backdrop-blur-sm border border-border/30 text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
+        title="Toggle navigation"
+      >
+        <PanelLeftOpen className="h-4 w-4" />
+      </button>
 
       {/* Mobile header */}
       <header className="sticky top-0 z-30 flex md:hidden h-12 items-center justify-between border-b bg-background px-4">
