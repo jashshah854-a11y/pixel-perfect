@@ -52,10 +52,24 @@ export default function TasksPage() {
 
   const createTask = useMutation({
     mutationFn: async (task: { title: string; description: string; priority: string; assigned_to: string | null; source: string }) => {
-      await supabase.from("tasks").insert(task);
+      const { data, error } = await supabase.from("tasks").insert(task).select("id").single();
+      if (error) throw error;
+      // Auto-assign via edge function
+      try {
+        await supabase.functions.invoke("assign-task", { body: { task_id: data.id } });
+        toast.success("Task created & auto-assigned to best-fit agent");
+      } catch {
+        toast.info("Task created. Auto-assignment pending.");
+      }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+    },
   });
+
+  const taskMap = Object.fromEntries((tasks || []).map((t) => [t.id, t.title]));
 
   const filtered = tasks?.filter((t) => {
     if (filterAgent && t.assigned_to !== filterAgent) return false;
