@@ -214,7 +214,7 @@ export function buildScene(
       const agentX = deskX + DESK_W / 2;
       const agentY = deskY + DESK_H + 50;
       const spriteNum = hashSpriteNum(agent.id);
-      const agentContainer = drawAgent(agent.name, agent.status, agentX, agentY, spriteNum);
+      const agentContainer = drawAgent(agent.name, agent.status, agentX, agentY, spriteNum, agent.department);
       room.addChild(agentContainer);
 
       agentSprites.push({
