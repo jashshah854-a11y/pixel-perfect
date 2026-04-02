@@ -1,73 +1,42 @@
-# Premium 4K AI Command Center — Office Redesign
 
-## Vision
-Transform the current office from a functional grid of rooms into an immersive, cinematic AI command center with executive-grade visual quality.
+# Autonomous Task Intake & Assignment System
 
----
+## Overview
+When a plan or task is submitted, an edge function evaluates all agents, assigns ownership based on role/department fit, and moves work to active status automatically.
 
-## Phase 1: Room & Layout Upgrade
+## Database Changes
+- New `task_assignments` table to track which agent claimed what, why, and their role (owner/support/observer)
+- Add realtime to tasks table for live updates
 
-**CEO War Room** (top):
-- Wider, taller room with holographic-style data overlays
-- Multiple monitor wall (3 screens side by side) showing live agent status
-- Executive desk with ambient underglow
-- Premium rug with geometric pattern
-- Subtle grid floor pattern with cyan accent lines
+## Edge Function: `assign-task`
+- Receives a task ID
+- Loads all agents and the task details
+- Uses role-based matching logic:
+  - **Hivemind** (Orchestration) → project management, coordination tasks
+  - **Omega** (Architecture) → system design, infrastructure tasks
+  - **Prism** (Frontend) → UI, design, frontend tasks
+  - **Oracle** (Intelligence) → data analysis, research tasks
+  - **Sentinel** (Security) → security, compliance tasks
+  - **Hawkeye** (QA) → testing, quality tasks
+  - **Atlas** (Backend) → API, database, backend tasks
+- Scores each agent's fit (0-100) based on keyword matching and department relevance
+- Assigns: top scorer = owner, 2nd+ with score > 50 = support, rest = inactive
+- Inserts assignment records with reasoning
+- Updates task status from "queued" → "in_progress"
+- Updates assigned agent's status to "working" with current_task set
 
-**Department Rooms** (6 rooms in 3x2 grid):
-- Deeper floors with premium checkerboard tiles
-- LED strip accents along walls (colored per department)
-- Each room gets a holographic department insignia (circle + icon glyph)
-- Glass partition effect on room borders (frosted glass stroke)
+## Frontend: Task Assignment Feed
+- New component showing real-time assignment decisions
+- Visible on Tasks page as an "Assignment Log" panel
+- Shows: task title, owner agent, support agents, reasoning, timestamp
 
-**Break Room** → **Neural Lounge**:
-- Rename and redesign as a sleek relaxation/recharge zone
-- Add ambient lighting effects (warm glow patches)
-- Premium coffee bar with steam particles
-
----
-
-## Phase 2: Agent Figure Enhancement
-
-- Add subtle idle sway animation (weight shifting left/right)
-- Working agents get floating code/text particles above their heads
-- Status indicators become glowing rings instead of dots
-- Agents cast directional shadows based on desk lamp positions
-
----
-
-## Phase 3: Environment Enrichment
-
-**New Objects**:
-- Server rack (in DevOps room) — blinking LED lights
-- Research globe (in Research room) — wireframe sphere
-- Code terminal (on each desk) — scrolling green text lines on monitor
-- Ambient ceiling lights — soft glow cones from above
-
-**Existing Upgrades**:
-- Monitors get visible code/data lines scrolling
-- Coffee mugs get more detailed steam
-- Whiteboards get diagrams (circles + lines)
-
----
-
-## Phase 4: Atmosphere & Polish
-
-- Ambient particle layer: floating dust motes with slow drift
-- Subtle vignette overlay (darker edges)
-- Room-to-room connecting lines (data flow visualization)
-- Premium font upgrade for room labels (larger, tracked out)
-
----
+## Auto-trigger
+- TaskForm submission calls the edge function after inserting the task
+- Plan creation on Plans page also triggers assignment
 
 ## Files Changed
-- `src/components/office-view/officeDrawing.ts` — Major rewrite of room, desk, agent rendering
-- `src/components/office-view/officeScene.ts` — Updated layout constants, new objects placement
-- `src/components/office-view/officeTicker.ts` — New animations (idle sway, code particles, LED blink)
-- `src/components/office-view/OfficeCanvas.tsx` — Ambient overlay layer
-
-## What Stays the Same
-- WASD CEO movement
-- Agent click interaction
-- Database schema
-- All other pages
+- `supabase/functions/assign-task/index.ts` — new edge function
+- `src/components/TaskForm.tsx` — call assign-task after insert
+- `src/components/AssignmentFeed.tsx` — new component showing assignment log
+- `src/pages/TasksPage.tsx` — add AssignmentFeed
+- Migration: create `task_assignments` table
