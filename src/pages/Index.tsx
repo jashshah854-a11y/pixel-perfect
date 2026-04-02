@@ -171,21 +171,30 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Recent Inbox */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-muted-foreground">Recent Inbox</h3>
-            <button onClick={() => navigate("/inbox")} className="text-xs text-primary hover:underline">View all</button>
-          </div>
-          {inbox && inbox.length > 0 ? (
-            <div className="space-y-2">
-              {inbox.map((msg) => (
-                <InboxMessage key={msg.id} message={msg} agentName={agentMap[msg.from_agent || ""] || undefined} />
-              ))}
+        {/* Recent Inbox + Research */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-muted-foreground">Recent Inbox</h3>
+              <button onClick={() => navigate("/inbox")} className="text-xs text-primary hover:underline">View all</button>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No messages yet.</p>
-          )}
+            {inbox && inbox.length > 0 ? (
+              <div className="space-y-2">
+                {inbox.map((msg) => (
+                  <InboxMessage key={msg.id} message={msg} agentName={agentMap[msg.from_agent || ""] || undefined} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No messages yet.</p>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-medium text-muted-foreground">Agent Research</h3>
+            </div>
+            <ResearchFeed agentMap={agentMap} />
+          </div>
         </div>
       </div>
     </Layout>

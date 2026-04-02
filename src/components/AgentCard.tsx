@@ -65,12 +65,27 @@ export function AgentCard({ agent, compact, onStatusChange, onAssignTask }: Agen
       </div>
 
       {!compact && onAssignTask && (
-        <button
-          onClick={() => onAssignTask(agent.id)}
-          className="w-full mt-1 text-xs rounded bg-primary/10 text-primary py-1.5 hover:bg-primary/20"
-        >
-          Assign Task
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onAssignTask(agent.id)}
+            className="flex-1 text-xs rounded bg-primary/10 text-primary py-1.5 hover:bg-primary/20"
+          >
+            Assign Task
+          </button>
+          <button
+            onClick={() => setShowMemory(!showMemory)}
+            className="text-xs rounded bg-muted px-2.5 py-1.5 hover:bg-muted/80 flex items-center gap-1"
+          >
+            <Brain className="h-3 w-3" />
+            Memory
+          </button>
+        </div>
+      )}
+
+      {showMemory && (
+        <div className="pt-2 border-t border-border/50">
+          <AgentMemoryView agentId={agent.id} agentName={agent.name} />
+        </div>
       )}
     </div>
   );
