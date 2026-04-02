@@ -8,7 +8,7 @@ import { CollaborationPanel } from "@/components/CollaborationPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Zap } from "lucide-react";
+import { Plus, Zap, Users, Brain } from "lucide-react";
 import { toast } from "sonner";
 
 const columns = [
