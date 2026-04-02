@@ -28,6 +28,8 @@ const statusDot: Record<string, string> = {
 };
 
 export function AgentCard({ agent, compact, onStatusChange, onAssignTask }: AgentCardProps) {
+  const [showMemory, setShowMemory] = useState(false);
+
   return (
     <div className="rounded-lg border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
