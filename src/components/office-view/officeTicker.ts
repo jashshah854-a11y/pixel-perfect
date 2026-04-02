@@ -26,6 +26,60 @@ const clockContainers: { hands: Graphics }[] = [];
 // === Scene references ===
 let sceneRef: SceneResult | null = null;
 
+// === Idle behavior system ===
+type IdleAction = "none" | "look_left" | "look_right" | "stretch" | "shift_weight" | "lean_back" | "nod";
+
+interface IdleState {
+  action: IdleAction;
+  timer: number;       // ticks remaining for current action
+  cooldown: number;     // ticks until next action allowed
+  phase: number;        // progress 0-1 through the action
+  seed: number;         // per-agent randomization
+}
+
+const idleStates = new Map<string, IdleState>();
+
+function getIdleState(agentId: string): IdleState {
+  let s = idleStates.get(agentId);
+  if (!s) {
+    s = {
+      action: "none",
+      timer: 0,
+      cooldown: Math.floor(80 + Math.random() * 200), // stagger initial cooldowns
+      phase: 0,
+      seed: Math.random(),
+    };
+    idleStates.set(agentId, s);
+  }
+  return s;
+}
+
+const IDLE_ACTIONS: IdleAction[] = ["look_left", "look_right", "stretch", "shift_weight", "lean_back", "nod"];
+const ACTION_DURATIONS: Record<IdleAction, number> = {
+  none: 0,
+  look_left: 80,
+  look_right: 80,
+  stretch: 100,
+  shift_weight: 90,
+  lean_back: 110,
+  nod: 60,
+};
+
+function pickIdleAction(seed: number): IdleAction {
+  const idx = Math.floor(Math.random() * IDLE_ACTIONS.length);
+  return IDLE_ACTIONS[idx];
+}
+
+// Smooth ease-in-out for natural motion
+function easeInOut(t: number): number {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
+// Bell curve: peaks at 0.5, zero at 0 and 1
+function bell(t: number): number {
+  return Math.sin(t * Math.PI);
+}
+
 export function setSceneRef(scene: SceneResult) {
   sceneRef = scene;
 }
@@ -60,13 +114,90 @@ export function animateScene(agentSprites: AgentSprite[]) {
         aura.scale.set(1 + Math.sin(tick * 0.03) * 0.04);
       }
     } else if (agent.status === "idle") {
-      // Idle sway — weight shifting
       const body = container.children.find((c) => c.label === "sprite-body");
-      if (body) {
-        body.x = Math.sin(tick * 0.015) * 0.8;
-      }
-      // Breathing
+      const state = getIdleState(agent.id);
+
+      // Background breathing always active
       container.scale.set(1 + Math.sin(tick * 0.02) * 0.006);
+
+      // Idle behavior state machine
+      if (state.action === "none") {
+        // Default gentle sway
+        if (body) body.x = Math.sin(tick * 0.015 + state.seed * 100) * 0.6;
+        if (body) body.y = 0;
+        if (body) body.rotation = 0;
+
+        state.cooldown--;
+        if (state.cooldown <= 0) {
+          state.action = pickIdleAction(state.seed);
+          state.timer = ACTION_DURATIONS[state.action];
+          state.phase = 0;
+        }
+      } else {
+        const duration = ACTION_DURATIONS[state.action];
+        state.phase = 1 - state.timer / duration;
+        const t = bell(state.phase); // smooth rise and fall
+
+        if (body) {
+          switch (state.action) {
+            case "look_left":
+              // Head/body slight turn left
+              body.x = -1.8 * t;
+              body.rotation = -0.04 * t;
+              body.y = 0;
+              break;
+
+            case "look_right":
+              body.x = 1.8 * t;
+              body.rotation = 0.04 * t;
+              body.y = 0;
+              break;
+
+            case "stretch":
+              // Rise up slightly, then settle
+              body.y = -3 * t;
+              body.x = 0;
+              body.rotation = 0;
+              // Scale up very slightly for "arms stretching" feel
+              container.scale.set(1 + 0.015 * t);
+              break;
+
+            case "shift_weight":
+              // Lateral lean
+              body.x = Math.sin(state.phase * Math.PI * 2) * 1.5;
+              body.y = Math.abs(Math.sin(state.phase * Math.PI * 2)) * -0.5;
+              body.rotation = Math.sin(state.phase * Math.PI * 2) * 0.02;
+              break;
+
+            case "lean_back":
+              // Lean backward slightly
+              body.y = -1.5 * t;
+              body.x = 0;
+              body.rotation = -0.03 * t;
+              break;
+
+            case "nod":
+              // Quick double nod
+              body.y = Math.sin(state.phase * Math.PI * 3) * -1.2;
+              body.x = 0;
+              body.rotation = Math.sin(state.phase * Math.PI * 3) * -0.015;
+              break;
+          }
+        }
+
+        state.timer--;
+        if (state.timer <= 0) {
+          // Reset to neutral
+          if (body) {
+            body.x = 0;
+            body.y = 0;
+            body.rotation = 0;
+          }
+          state.action = "none";
+          // Randomized cooldown: 3-8 seconds at 60fps
+          state.cooldown = Math.floor(180 + Math.random() * 300);
+        }
+      }
     } else if (agent.status === "paused") {
       const pauseGlow = container.children.find((c) => c.label === "agent-pause-glow");
       if (pauseGlow) pauseGlow.alpha = 0.4 + Math.sin(tick * 0.05) * 0.4;
@@ -222,7 +353,6 @@ function updateParticles() {
         particleGraphics.circle(p.x, p.y, 0.8);
         particleGraphics.fill({ color: 0xffffff, alpha: p.alpha });
       } else if (p.type === "code") {
-        // Tiny bright dots
         particleGraphics.circle(p.x, p.y, 0.6);
         particleGraphics.fill({ color: 0x22c55e, alpha: p.alpha });
       }
@@ -268,4 +398,5 @@ export function resetTick() {
   particles = [];
   particleGraphics = null;
   sceneRef = null;
+  idleStates.clear();
 }
