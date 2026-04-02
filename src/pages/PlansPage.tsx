@@ -96,6 +96,17 @@ export default function PlansPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["plans"] }),
   });
 
+  const clearAllPlans = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("plans").delete().gte("created_at", "1970-01-01");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plans"] });
+      toast.success("All plans cleared");
+    },
+  });
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
