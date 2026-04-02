@@ -1,7 +1,7 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Building2, Bot, ListTodo, FileText, Inbox } from "lucide-react";
-
+import { Building2, Bot, ListTodo, FileText, Inbox, Volume2, VolumeX } from "lucide-react";
+import { isMuted, setMuted } from "@/lib/sounds";
 const navItems = [
   { label: "Office", path: "/", icon: Building2 },
   { label: "Agents", path: "/agents", icon: Bot },
