@@ -4,6 +4,7 @@ import { Layout } from "@/components/Layout";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
 import { AssignmentFeed } from "@/components/AssignmentFeed";
+import { CollaborationPanel } from "@/components/CollaborationPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
