@@ -385,6 +385,36 @@ export type Database = {
         }
         Relationships: []
       }
+      task_outputs: {
+        Row: {
+          content: string
+          created_at: string
+          format: string
+          id: string
+          output_type: string
+          task_id: string
+          title: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          format?: string
+          id?: string
+          output_type?: string
+          task_id: string
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          format?: string
+          id?: string
+          output_type?: string
+          task_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assigned_to: string | null
