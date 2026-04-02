@@ -108,7 +108,7 @@ export function buildScene(
   ceoRoom.addChild(drawCeilingLight(fullW * 0.75, 36, 0xf59e0b));
 
   // Multi-monitor wall (3 screens at the top)
-  const monWall = new (await import("pixi.js")).Graphics();
+  const monWall = new Graphics();
   const mwY = 38;
   for (let i = 0; i < 3; i++) {
     const mwX = fullW / 2 - 70 + i * 50;
