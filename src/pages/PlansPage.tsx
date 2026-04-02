@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { toast } from "sonner";
 
 export default function PlansPage() {
   const queryClient = useQueryClient();
@@ -46,10 +47,30 @@ export default function PlansPage() {
 
   const createPlan = useMutation({
     mutationFn: async () => {
-      await supabase.from("plans").insert({ title, markdown_content: content });
+      const { data, error } = await supabase.from("plans").insert({ title, markdown_content: content }).select("id").single();
+      if (error) throw error;
+      // Auto-decompose into subtasks and assign
+      try {
+        const { data: result } = await supabase.functions.invoke("decompose-plan", { body: { plan_id: data.id } });
+        if (result?.subtasks?.length > 0) {
+          toast.success(`Plan decomposed into ${result.subtasks.length} subtasks and assigned`);
+          // Trigger office claim events for each assigned subtask
+          for (const sub of result.subtasks) {
+            if (sub.owner) {
+              window.dispatchEvent(new CustomEvent("agent-claim", {
+                detail: { agentId: sub.owner, taskTitle: sub.title }
+              }));
+            }
+          }
+        }
+      } catch {
+        toast.info("Plan created. Auto-decomposition pending.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plans"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
       setTitle("");
       setContent("");
       setFormOpen(false);

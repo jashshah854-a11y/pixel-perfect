@@ -1,4 +1,4 @@
-import { Graphics } from "pixi.js";
+import { Graphics, Text, TextStyle, Container } from "pixi.js";
 import type { AgentSprite, SceneResult } from "./officeScene";
 
 let tick = 0;
@@ -25,6 +25,20 @@ const clockContainers: { hands: Graphics }[] = [];
 
 // === Scene references ===
 let sceneRef: SceneResult | null = null;
+
+// === Claim notification system ===
+interface ClaimNotification {
+  agentId: string;
+  taskTitle: string;
+  timer: number;     // ticks remaining
+  container: Container | null;
+}
+
+const pendingClaims: ClaimNotification[] = [];
+
+export function triggerClaimNotification(agentId: string, taskTitle: string) {
+  pendingClaims.push({ agentId, taskTitle, timer: 180, container: null }); // 3 seconds at 60fps
+}
 
 // === Idle behavior system ===
 type IdleAction = "none" | "look_left" | "look_right" | "stretch" | "shift_weight" | "lean_back" | "nod";
@@ -256,6 +270,104 @@ export function animateScene(agentSprites: AgentSprite[]) {
 
   // Wall clocks
   if (tick % 60 === 0) updateWallClocks();
+
+  // Claim notifications
+  updateClaimNotifications(agentSprites);
+}
+
+// === Claim notification rendering ===
+function updateClaimNotifications(agentSprites: AgentSprite[]) {
+  if (!sceneRef) return;
+
+  for (let i = pendingClaims.length - 1; i >= 0; i--) {
+    const claim = pendingClaims[i];
+    
+    // Find the agent sprite
+    const sprite = agentSprites.find(s => s.agent.id === claim.agentId);
+    if (!sprite) {
+      pendingClaims.splice(i, 1);
+      continue;
+    }
+
+    // Create notification bubble on first frame
+    if (!claim.container) {
+      const bubble = new Container();
+      bubble.label = "claim-bubble";
+
+      // Background pill
+      const bg = new Graphics();
+      const text = claim.taskTitle.length > 25 ? claim.taskTitle.slice(0, 22) + "..." : claim.taskTitle;
+      const textW = Math.min(text.length * 5.5 + 20, 180);
+      bg.roundRect(-textW / 2, -16, textW, 28, 6);
+      bg.fill({ color: 0x3b82f6, alpha: 0.9 });
+      bg.moveTo(0, 12);
+      bg.lineTo(-5, 16);
+      bg.lineTo(5, 16);
+      bg.lineTo(0, 12);
+      bg.fill({ color: 0x3b82f6, alpha: 0.9 });
+      bubble.addChild(bg);
+
+      // Zap icon
+      const zap = new Text({ text: "⚡", style: new TextStyle({ fontSize: 9 }) });
+      zap.anchor.set(0.5);
+      zap.position.set(-textW / 2 + 12, 0);
+      bubble.addChild(zap);
+
+      // Task title
+      const label = new Text({
+        text,
+        style: new TextStyle({ fontSize: 8, fill: 0xffffff, fontFamily: "monospace" }),
+      });
+      label.anchor.set(0, 0.5);
+      label.position.set(-textW / 2 + 22, 0);
+      bubble.addChild(label);
+
+      // Position above agent
+      bubble.position.set(sprite.container.x, sprite.container.y - 45);
+      bubble.alpha = 0;
+
+      // Add to the agent's parent room container
+      sprite.container.parent?.addChild(bubble);
+      claim.container = bubble;
+    }
+
+    // Animate
+    const totalDuration = 180;
+    const progress = 1 - claim.timer / totalDuration;
+    
+    if (progress < 0.15) {
+      // Fade in + rise
+      const t = progress / 0.15;
+      claim.container.alpha = t;
+      claim.container.y = sprite.container.y - 45 + (1 - t) * 15;
+      claim.container.scale.set(0.8 + t * 0.2);
+    } else if (progress < 0.85) {
+      // Hold + gentle float
+      claim.container.alpha = 1;
+      claim.container.y = sprite.container.y - 45 + Math.sin(tick * 0.05) * 1.5;
+    } else {
+      // Fade out
+      const t = (progress - 0.85) / 0.15;
+      claim.container.alpha = 1 - t;
+      claim.container.y = sprite.container.y - 48 - t * 8;
+    }
+
+    // Highlight agent with glow
+    if (progress < 0.85) {
+      const aura = sprite.container.children.find(c => c.label === "agent-aura");
+      if (aura) {
+        aura.alpha = 0.8 + Math.sin(tick * 0.1) * 0.2;
+        aura.scale.set(1.1 + Math.sin(tick * 0.08) * 0.05);
+      }
+    }
+
+    claim.timer--;
+    if (claim.timer <= 0) {
+      claim.container.parent?.removeChild(claim.container);
+      claim.container.destroy();
+      pendingClaims.splice(i, 1);
+    }
+  }
 }
 
 // === Particle management ===

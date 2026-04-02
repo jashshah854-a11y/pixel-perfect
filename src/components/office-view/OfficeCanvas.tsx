@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useOfficePixiRuntime } from "./useOfficePixiRuntime";
 import { buildScene, getSceneHeight, type AgentSprite } from "./officeScene";
-import { animateScene, resetTick, registerClock, keyState, setSceneRef, setParticleGraphics } from "./officeTicker";
+import { animateScene, resetTick, registerClock, keyState, setSceneRef, setParticleGraphics, triggerClaimNotification } from "./officeTicker";
 import { initSwarm, updateSwarm, resetSwarm, dispatchSwarm } from "./hivemindSwarm";
 import { Graphics } from "pixi.js";
 
@@ -99,10 +99,21 @@ export function OfficeCanvas({ agents, onAgentClick }: OfficeCanvasProps) {
         dispatchSwarm(detail.targetRoom, detail.taskTitle, detail.intensity || 2);
       }
     };
+
+    // Listen for agent claim events
+    const handleClaim = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.agentId && detail?.taskTitle) {
+        triggerClaimNotification(detail.agentId, detail.taskTitle);
+      }
+    };
+
     window.addEventListener("hivemind-dispatch", handleSwarm);
+    window.addEventListener("agent-claim", handleClaim);
 
     return () => {
       window.removeEventListener("hivemind-dispatch", handleSwarm);
+      window.removeEventListener("agent-claim", handleClaim);
     };
   }, [app, agents, onAgentClick]);
 
