@@ -1,42 +1,89 @@
 
-# Autonomous Task Intake & Assignment System
+# Multi-Agent Collaboration & Learning System
 
 ## Overview
-When a plan or task is submitted, an edge function evaluates all agents, assigns ownership based on role/department fit, and moves work to active status automatically.
+Build a persistent intelligence layer across the agent office with three pillars: cross-agent collaboration, long-term learning from interactions, and autonomous self-improvement.
 
-## Database Changes
-- New `task_assignments` table to track which agent claimed what, why, and their role (owner/support/observer)
-- Add realtime to tasks table for live updates
+---
 
-## Edge Function: `assign-task`
-- Receives a task ID
-- Loads all agents and the task details
-- Uses role-based matching logic:
-  - **Hivemind** (Orchestration) → project management, coordination tasks
-  - **Omega** (Architecture) → system design, infrastructure tasks
-  - **Prism** (Frontend) → UI, design, frontend tasks
-  - **Oracle** (Intelligence) → data analysis, research tasks
-  - **Sentinel** (Security) → security, compliance tasks
-  - **Hawkeye** (QA) → testing, quality tasks
-  - **Atlas** (Backend) → API, database, backend tasks
-- Scores each agent's fit (0-100) based on keyword matching and department relevance
-- Assigns: top scorer = owner, 2nd+ with score > 50 = support, rest = inactive
-- Inserts assignment records with reasoning
-- Updates task status from "queued" → "in_progress"
-- Updates assigned agent's status to "working" with current_task set
+## Part 1: Database Schema
 
-## Frontend: Task Assignment Feed
-- New component showing real-time assignment decisions
-- Visible on Tasks page as an "Assignment Log" panel
-- Shows: task title, owner agent, support agents, reasoning, timestamp
+### New Tables
+1. **`agent_memory`** — Persistent learning store per agent
+   - agent_id, memory_type (preference/pattern/correction/insight), content, source_task_id, confidence, created_at
+   - Types: "preference" (my style/standards), "pattern" (recurring task patterns), "correction" (mistakes to avoid), "insight" (learned from research)
 
-## Auto-trigger
-- TaskForm submission calls the edge function after inserting the task
-- Plan creation on Plans page also triggers assignment
+2. **`agent_collaborations`** — Cross-agent coordination log
+   - id, task_id, from_agent, to_agent, collab_type (handoff/request_help/share_finding/review), message, status (pending/accepted/completed), created_at
+
+3. **`agent_research_log`** — Autonomous research tracking
+   - id, agent_id, topic, findings, source_url, relevance_score, applied (boolean), researched_at
+
+### Modified Tables
+- Enable realtime on agent_collaborations for live coordination visibility
+
+---
+
+## Part 2: Edge Functions
+
+### `agent-collaborate` — Cross-agent coordination
+- Accepts: from_agent, to_agent, task_id, collab_type, message
+- Creates collaboration record
+- Sends inbox notification to receiving agent
+- Updates both agents' status when collaboration starts
+
+### `agent-learn` — Memory extraction from completed tasks
+- Accepts: task_id (completed task)
+- Analyzes task title, description, assignment history, corrections
+- Extracts learnings per agent: what worked, what was corrected, patterns
+- Stores in agent_memory with confidence scoring
+- Uses Lovable AI to extract structured insights from task context
+
+### `agent-research` — Autonomous self-improvement
+- Accepts: agent_id
+- Based on agent's role/department, generates relevant research topics
+- Uses Lovable AI to synthesize improvements
+- Stores findings in agent_research_log
+- Only applies insights above confidence threshold (guardrail)
+
+---
+
+## Part 3: UI Components
+
+### CollaborationPanel (new)
+- Shows active collaborations between agents
+- Visual thread of handoffs, requests, shared findings
+- Displayed on Tasks page and Office page
+
+### AgentMemoryView (new)
+- Shows what each agent has learned over time
+- Categorized by: preferences, patterns, corrections, insights
+- Accessible from agent detail popover
+
+### ResearchActivityFeed (new)
+- Shows autonomous research activity
+- What agents studied, what they learned, what was applied
+- Visible on Dashboard or dedicated section
+
+---
+
+## Part 4: Integration Points
+
+- TaskForm → after task completion, triggers `agent-learn`
+- Office idle state → periodically triggers `agent-research` for idle agents
+- Task assignment → checks agent_memory for better routing decisions
+- Collaboration triggers automatically when task spans multiple departments
+
+---
 
 ## Files Changed
-- `supabase/functions/assign-task/index.ts` — new edge function
-- `src/components/TaskForm.tsx` — call assign-task after insert
-- `src/components/AssignmentFeed.tsx` — new component showing assignment log
-- `src/pages/TasksPage.tsx` — add AssignmentFeed
-- Migration: create `task_assignments` table
+- Migration: 3 new tables
+- `supabase/functions/agent-collaborate/index.ts` — new
+- `supabase/functions/agent-learn/index.ts` — new
+- `supabase/functions/agent-research/index.ts` — new
+- `src/components/CollaborationPanel.tsx` — new
+- `src/components/AgentMemoryView.tsx` — new
+- `src/components/ResearchFeed.tsx` — new
+- `src/pages/TasksPage.tsx` — add collaboration panel
+- `src/pages/OfficePage.tsx` — add collaboration visibility
+- `src/pages/AgentsPage.tsx` — add memory view to agent cards
