@@ -57,8 +57,15 @@ export function Layout({ children, totalTokens = 0, unreadCount = 0 }: LayoutPro
             );
           })}
         </nav>
-        <div className="p-4 border-t border-sidebar-border">
-          <p className="text-xs text-muted-foreground font-mono">{totalTokens.toLocaleString()} tokens used</p>
+        <div className="p-4 border-t border-sidebar-border flex items-center justify-between">
+          <p className="text-xs text-muted-foreground font-mono">{totalTokens.toLocaleString()} tokens</p>
+          <button
+            onClick={toggleSound}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 transition-colors"
+            title={soundOff ? "Unmute sounds" : "Mute sounds"}
+          >
+            {soundOff ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+          </button>
         </div>
       </aside>
 
