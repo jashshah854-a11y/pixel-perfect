@@ -14,6 +14,7 @@ interface Particle {
   vy: number;
   alpha: number;
   life: number;
+  type: "steam" | "dust" | "code";
 }
 
 let particles: Particle[] = [];
@@ -42,29 +43,35 @@ export function animateScene(agentSprites: AgentSprite[]) {
   tick++;
 
   // Animate agents
-  for (const { container, agent, baseY } of agentSprites) {
+  for (const { container, agent } of agentSprites) {
     if (agent.status === "working") {
-      container.y = (container.position.y !== undefined ? container.position.y : baseY) ;
-      // Bob using local position
-      const localBaseY = container.y;
-      container.y = localBaseY + Math.sin(tick * 0.04) * 2 - Math.sin((tick - 1) * 0.04) * 2 + container.y - container.y;
-      // Actually just set absolute bob on the container within its parent
-      // We need to track the original local Y
+      // Subtle bob
+      const body = container.children.find((c) => c.label === "sprite-body");
+      if (body) body.y = Math.sin(tick * 0.04) * 1.5;
+
+      // Status dot pulse
       const dot = container.children.find((c) => c.label === "status-dot");
       if (dot) dot.alpha = 0.6 + Math.sin(tick * 0.08) * 0.4;
 
+      // Aura ring pulse
       const aura = container.children.find((c) => c.label === "agent-aura");
       if (aura) {
-        aura.alpha = 0.5 + Math.sin(tick * 0.06) * 0.5;
-        aura.scale.set(1 + Math.sin(tick * 0.03) * 0.05);
+        aura.alpha = 0.4 + Math.sin(tick * 0.06) * 0.4;
+        aura.scale.set(1 + Math.sin(tick * 0.03) * 0.04);
       }
     } else if (agent.status === "idle") {
-      container.scale.set(1 + Math.sin(tick * 0.02) * 0.008);
+      // Idle sway — weight shifting
+      const body = container.children.find((c) => c.label === "sprite-body");
+      if (body) {
+        body.x = Math.sin(tick * 0.015) * 0.8;
+      }
+      // Breathing
+      container.scale.set(1 + Math.sin(tick * 0.02) * 0.006);
     } else if (agent.status === "paused") {
       const pauseGlow = container.children.find((c) => c.label === "agent-pause-glow");
-      if (pauseGlow) pauseGlow.alpha = 0.5 + Math.sin(tick * 0.05) * 0.5;
-      const spriteBody = container.children.find((c) => c.label === "sprite-body");
-      if (spriteBody) spriteBody.alpha = 0.75 + Math.sin(tick * 0.04) * 0.25;
+      if (pauseGlow) pauseGlow.alpha = 0.4 + Math.sin(tick * 0.05) * 0.4;
+      const body = container.children.find((c) => c.label === "sprite-body");
+      if (body) body.alpha = 0.75 + Math.sin(tick * 0.04) * 0.25;
     }
   }
 
@@ -74,20 +81,16 @@ export function animateScene(agentSprites: AgentSprite[]) {
     const bounds = sceneRef.ceoBounds;
     const speed = 3;
 
-    if (keyState["w"] || keyState["arrowup"]) {
+    if (keyState["w"] || keyState["arrowup"])
       ceo.y = Math.max(bounds.y - ceo.parent.y + 30, ceo.y - speed);
-    }
-    if (keyState["s"] || keyState["arrowdown"]) {
+    if (keyState["s"] || keyState["arrowdown"])
       ceo.y = Math.min(bounds.y + bounds.h - ceo.parent.y, ceo.y + speed);
-    }
-    if (keyState["a"] || keyState["arrowleft"]) {
+    if (keyState["a"] || keyState["arrowleft"])
       ceo.x = Math.max(bounds.x - ceo.parent.x + 30, ceo.x - speed);
-    }
-    if (keyState["d"] || keyState["arrowright"]) {
+    if (keyState["d"] || keyState["arrowright"])
       ceo.x = Math.min(bounds.x + bounds.w - ceo.parent.x, ceo.x + speed);
-    }
 
-    // Crown animation
+    // Crown float
     const crown = ceo.children.find((c) => c.label === "ceo-crown");
     if (crown) {
       crown.y = -28 - 10 + Math.sin(tick * 0.06) * 2;
@@ -102,8 +105,23 @@ export function animateScene(agentSprites: AgentSprite[]) {
     }
   }
 
-  // Particles (coffee steam)
+  // Particles
   updateParticles();
+
+  // LED strip pulse on rooms
+  if (sceneRef) {
+    for (const room of sceneRef.roomContainers) {
+      const led = room.container.children.find((c) => c.label === "led-strip");
+      if (led) {
+        led.alpha = 0.7 + Math.sin(tick * 0.02 + room.y * 0.01) * 0.3;
+      }
+      // Department insignia rotation
+      const insignia = room.container.children.find((c) => c.label === "dept-insignia");
+      if (insignia) {
+        insignia.rotation = Math.sin(tick * 0.01) * 0.08;
+      }
+    }
+  }
 
   // Wall clocks
   if (tick % 60 === 0) updateWallClocks();
@@ -113,59 +131,101 @@ export function animateScene(agentSprites: AgentSprite[]) {
 function updateParticles() {
   if (!particleGraphics) return;
 
-  // Spawn from break room coffee machine
-  if (sceneRef && tick % 20 === 0) {
+  // Coffee steam from break room
+  if (sceneRef && tick % 18 === 0) {
     const pos = sceneRef.coffeeMachinePos;
     for (let i = 0; i < 3; i++) {
       particles.push({
         x: pos.x + (Math.random() - 0.5) * 8,
         y: pos.y - 30,
-        vx: (Math.random() - 0.5) * 0.3,
+        vx: (Math.random() - 0.5) * 0.25,
         vy: -0.3 - Math.random() * 0.4,
-        alpha: 0.3 + Math.random() * 0.2,
+        alpha: 0.25 + Math.random() * 0.15,
         life: 60 + Math.random() * 40,
+        type: "steam",
       });
     }
   }
 
-  // Spawn from desk coffee mugs (every ~40 ticks, 1-2 particles per mug)
-  if (sceneRef && tick % 40 === 0) {
+  // Desk mug steam
+  if (sceneRef && tick % 35 === 0) {
     for (const mug of sceneRef.mugPositions) {
       for (let i = 0; i < 2; i++) {
         particles.push({
           x: mug.x + (Math.random() - 0.5) * 4,
           y: mug.y - 6,
-          vx: (Math.random() - 0.5) * 0.15,
-          vy: -0.2 - Math.random() * 0.25,
-          alpha: 0.15 + Math.random() * 0.1,
-          life: 40 + Math.random() * 30,
+          vx: (Math.random() - 0.5) * 0.12,
+          vy: -0.2 - Math.random() * 0.2,
+          alpha: 0.12 + Math.random() * 0.08,
+          life: 35 + Math.random() * 25,
+          type: "steam",
         });
       }
     }
   }
 
-  // Animate monitor screens for working agents
-  if (sceneRef) {
-    for (const mon of sceneRef.monitorScreens) {
-      if (mon.status === "working") {
-        // Subtle color shift via alpha oscillation
-        mon.container.alpha = 0.8 + Math.sin(tick * 0.08 + mon.container.x * 0.1) * 0.15;
+  // Floating dust motes (ambient)
+  if (sceneRef && tick % 30 === 0) {
+    for (let i = 0; i < 2; i++) {
+      particles.push({
+        x: Math.random() * 1200 + 16,
+        y: Math.random() * 600 + 50,
+        vx: (Math.random() - 0.5) * 0.1,
+        vy: -0.05 - Math.random() * 0.05,
+        alpha: 0.06 + Math.random() * 0.04,
+        life: 120 + Math.random() * 80,
+        type: "dust",
+      });
+    }
+  }
+
+  // Code particles above working agents
+  if (sceneRef && tick % 25 === 0) {
+    for (const sprite of sceneRef.agentSprites) {
+      if (sprite.agent.status === "working") {
+        particles.push({
+          x: sprite.baseX + (Math.random() - 0.5) * 12,
+          y: sprite.baseY - 20,
+          vx: (Math.random() - 0.5) * 0.2,
+          vy: -0.4 - Math.random() * 0.3,
+          alpha: 0.15 + Math.random() * 0.1,
+          life: 30 + Math.random() * 20,
+          type: "code",
+        });
       }
     }
   }
 
-  // Update particles
+  // Monitor screen shimmer for working agents
+  if (sceneRef) {
+    for (const mon of sceneRef.monitorScreens) {
+      if (mon.status === "working") {
+        mon.container.alpha = 0.8 + Math.sin(tick * 0.1 + mon.container.x * 0.05) * 0.15;
+      }
+    }
+  }
+
+  // Render particles
   particleGraphics.clear();
   const alive: Particle[] = [];
   for (const p of particles) {
     p.x += p.vx;
     p.y += p.vy;
     p.life--;
-    p.alpha -= 0.003;
-    if (p.life > 0 && p.alpha > 0.01) {
+    p.alpha -= p.type === "dust" ? 0.0005 : 0.003;
+    if (p.life > 0 && p.alpha > 0.005) {
       alive.push(p);
-      particleGraphics.circle(p.x, p.y, 1.2 + (1 - p.alpha) * 1.2);
-      particleGraphics.fill({ color: 0x9ca3af, alpha: p.alpha });
+      if (p.type === "steam") {
+        particleGraphics.circle(p.x, p.y, 1.2 + (1 - p.alpha) * 1.5);
+        particleGraphics.fill({ color: 0x9ca3af, alpha: p.alpha });
+      } else if (p.type === "dust") {
+        particleGraphics.circle(p.x, p.y, 0.8);
+        particleGraphics.fill({ color: 0xffffff, alpha: p.alpha });
+      } else if (p.type === "code") {
+        // Tiny bright dots
+        particleGraphics.circle(p.x, p.y, 0.6);
+        particleGraphics.fill({ color: 0x22c55e, alpha: p.alpha });
+      }
     }
   }
   particles = alive;
@@ -195,10 +255,10 @@ function updateWallClocks() {
     const sAngle = (s * Math.PI * 2) / 60 - Math.PI / 2;
     g.moveTo(0, 0);
     g.lineTo(Math.cos(sAngle) * 6, Math.sin(sAngle) * 6);
-    g.stroke({ width: 0.3, color: 0xef4444, alpha: 0.7 });
+    g.stroke({ width: 0.3, color: 0x3b82f6, alpha: 0.7 });
 
     g.circle(0, 0, 1);
-    g.fill(0xa1a1aa);
+    g.fill(0x3b82f6);
   }
 }
 
