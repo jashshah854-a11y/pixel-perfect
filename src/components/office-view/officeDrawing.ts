@@ -51,127 +51,177 @@ function hashName(name: string): number {
 // Smooth procedural humanoid face + body
 // =============================================
 
-function drawHumanoidFace(g: Graphics, status: string, hairColor: number, headY: number) {
-  // Head shape — slightly oval for more natural look
-  g.ellipse(0, headY, 10, 10.5);
+function drawHumanoidFace(g: Graphics, status: string, hairColor: number, headY: number, seed: number = 0) {
+  // Per-face variation from seed (0-1 range helpers)
+  const v1 = ((seed * 7 + 3) % 10) / 10;       // 0-1
+  const v2 = ((seed * 13 + 5) % 10) / 10;
+  const v3 = ((seed * 19 + 7) % 10) / 10;
+  const asymm = (v1 - 0.5) * 0.4;               // slight L/R asymmetry
+
+  // Head — rounder, more human proportions
+  const headW = 9.5 + v1 * 1;                    // 9.5-10.5
+  const headH = 10 + v2 * 1;                     // 10-11
+  g.ellipse(0, headY, headW, headH);
   g.fill(SKIN_TONE);
 
-  // Jaw shadow for depth
-  g.ellipse(0, headY + 5, 8, 4);
-  g.fill({ color: SKIN_SHADOW, alpha: 0.2 });
+  // Forehead to jaw gradient shading
+  g.ellipse(0, headY + headH * 0.35, headW * 0.85, headH * 0.45);
+  g.fill({ color: SKIN_SHADOW, alpha: 0.12 });
 
-  // Ears with inner detail
-  g.circle(-9.5, headY + 1, 2.8);
-  g.fill(SKIN_SHADOW);
-  g.circle(-9.5, headY + 1, 1.5);
-  g.fill({ color: SKIN_TONE, alpha: 0.6 });
-  g.circle(9.5, headY + 1, 2.8);
-  g.fill(SKIN_SHADOW);
-  g.circle(9.5, headY + 1, 1.5);
-  g.fill({ color: SKIN_TONE, alpha: 0.6 });
+  // Cheekbone structure — subtle lateral shadows
+  g.ellipse(-headW * 0.65, headY + 2, 3, headH * 0.35);
+  g.fill({ color: SKIN_SHADOW, alpha: 0.07 });
+  g.ellipse(headW * 0.65, headY + 2, 3, headH * 0.35);
+  g.fill({ color: SKIN_SHADOW, alpha: 0.07 });
 
-  // Hair — fuller, more styled
-  g.arc(0, headY - 1, 11, -Math.PI * 0.95, -Math.PI * 0.05);
-  g.fill(hairColor);
-  g.roundRect(-9, headY - 12, 18, 5, 3);
-  g.fill(hairColor);
-  // Side hair volume
-  g.ellipse(-9, headY - 4, 3, 5);
-  g.fill({ color: hairColor, alpha: 0.7 });
-  g.ellipse(9, headY - 4, 3, 5);
-  g.fill({ color: hairColor, alpha: 0.7 });
-  // Hair highlight
-  g.arc(0, headY - 1, 9, -Math.PI * 0.7, -Math.PI * 0.3);
-  g.fill({ color: blend(hairColor, 0xffffff, 0.15), alpha: 0.3 });
-
-  // Eyes — larger, more expressive
-  const eyeY = headY - 0.5;
-  // Eye whites with slight shadow
-  g.ellipse(-3.5, eyeY, 2.5, 2);
-  g.fill(0xfafafa);
-  g.ellipse(3.5, eyeY, 2.5, 2);
-  g.fill(0xfafafa);
-  // Upper eyelid shadow
-  g.ellipse(-3.5, eyeY - 1, 2.5, 0.8);
+  // Jaw definition
+  g.ellipse(0, headY + headH * 0.55, headW * 0.7, 3);
   g.fill({ color: SKIN_SHADOW, alpha: 0.15 });
-  g.ellipse(3.5, eyeY - 1, 2.5, 0.8);
-  g.fill({ color: SKIN_SHADOW, alpha: 0.15 });
-  // Iris — colored based on agent
-  g.circle(-3.2, eyeY + 0.2, 1.4);
-  g.fill(0x3d2b1f);
-  g.circle(3.8, eyeY + 0.2, 1.4);
-  g.fill(0x3d2b1f);
+
+  // Ears — proportional, with asymmetry
+  const earY = headY + 0.5 + asymm;
+  g.ellipse(-headW - 1, earY, 2.2, 3);
+  g.fill(SKIN_SHADOW);
+  g.ellipse(-headW - 1, earY, 1.2, 1.8);
+  g.fill({ color: SKIN_TONE, alpha: 0.5 });
+  g.ellipse(headW + 1, earY + asymm * 0.5, 2.2, 3);
+  g.fill(SKIN_SHADOW);
+  g.ellipse(headW + 1, earY + asymm * 0.5, 1.2, 1.8);
+  g.fill({ color: SKIN_TONE, alpha: 0.5 });
+
+  // Hair — natural, with variation
+  const hairTop = headY - headH + 1;
+  g.arc(0, headY - 1, headW + 1.5, -Math.PI * 0.92, -Math.PI * 0.08);
+  g.fill(hairColor);
+  g.roundRect(-headW + 1, hairTop - 1, headW * 2 - 2, 4 + v3 * 2, 3);
+  g.fill(hairColor);
+  // Side volume — slight asymmetry
+  g.ellipse(-headW + 1, headY - 3, 2.5 + v1 * 0.5, 4.5);
+  g.fill({ color: hairColor, alpha: 0.65 });
+  g.ellipse(headW - 1, headY - 3, 2.5 + v2 * 0.5, 4.5);
+  g.fill({ color: hairColor, alpha: 0.65 });
+  // Highlight
+  g.arc(v1 - 0.5, headY - 2, headW - 2, -Math.PI * 0.65, -Math.PI * 0.35);
+  g.fill({ color: blend(hairColor, 0xffffff, 0.12), alpha: 0.25 });
+
+  // === Eyes — smaller, natural spacing, with variation ===
+  const eyeY = headY - 0.8 + v2 * 0.6;
+  const eyeSpacing = 3.2 + v1 * 0.6;            // 3.2-3.8 apart from center
+  const eyeW = 1.8 + v3 * 0.3;                  // 1.8-2.1 (reduced from 2.5)
+  const eyeH = 1.4 + v2 * 0.2;                  // 1.4-1.6 (reduced from 2.0)
+
+  // Eye sockets — subtle depth
+  g.ellipse(-eyeSpacing, eyeY - 0.3, eyeW + 0.8, eyeH + 0.6);
+  g.fill({ color: SKIN_SHADOW, alpha: 0.08 });
+  g.ellipse(eyeSpacing + asymm * 0.3, eyeY - 0.3, eyeW + 0.8, eyeH + 0.6);
+  g.fill({ color: SKIN_SHADOW, alpha: 0.08 });
+
+  // Eye whites
+  g.ellipse(-eyeSpacing, eyeY, eyeW, eyeH);
+  g.fill(0xf5f5f0);
+  g.ellipse(eyeSpacing + asymm * 0.3, eyeY, eyeW, eyeH);
+  g.fill(0xf5f5f0);
+
+  // Upper lid crease
+  g.arc(-eyeSpacing, eyeY - 0.2, eyeW, -Math.PI * 0.85, -Math.PI * 0.15);
+  g.stroke({ width: 0.4, color: SKIN_SHADOW, alpha: 0.2 });
+  g.arc(eyeSpacing + asymm * 0.3, eyeY - 0.2, eyeW, -Math.PI * 0.85, -Math.PI * 0.15);
+  g.stroke({ width: 0.4, color: SKIN_SHADOW, alpha: 0.2 });
+
+  // Iris
+  const irisR = 0.9 + v1 * 0.15;
+  const irisColors = [0x3d2b1f, 0x2d5a3d, 0x4a3520, 0x2b3d5a, 0x3a2d1f];
+  const irisColor = irisColors[seed % irisColors.length];
+  g.circle(-eyeSpacing + 0.15, eyeY + 0.15, irisR);
+  g.fill(irisColor);
+  g.circle(eyeSpacing + asymm * 0.3 + 0.15, eyeY + 0.15, irisR);
+  g.fill(irisColor);
+
   // Pupil
-  g.circle(-3.2, eyeY + 0.2, 0.7);
-  g.fill(0x111111);
-  g.circle(3.8, eyeY + 0.2, 0.7);
-  g.fill(0x111111);
-  // Eye shine — dual highlights for liveliness
-  g.circle(-2.6, eyeY - 0.4, 0.6);
-  g.fill({ color: 0xffffff, alpha: 0.9 });
-  g.circle(4.4, eyeY - 0.4, 0.6);
-  g.fill({ color: 0xffffff, alpha: 0.9 });
-  g.circle(-3.6, eyeY + 0.8, 0.3);
-  g.fill({ color: 0xffffff, alpha: 0.4 });
-  g.circle(3.4, eyeY + 0.8, 0.3);
-  g.fill({ color: 0xffffff, alpha: 0.4 });
+  g.circle(-eyeSpacing + 0.15, eyeY + 0.15, irisR * 0.5);
+  g.fill(0x0a0a0a);
+  g.circle(eyeSpacing + asymm * 0.3 + 0.15, eyeY + 0.15, irisR * 0.5);
+  g.fill(0x0a0a0a);
 
-  // Eyebrows — natural arched
-  const browColor = blend(hairColor, 0x000000, 0.25);
-  g.moveTo(-6, eyeY - 3.2);
-  g.quadraticCurveTo(-3.5, eyeY - 5.2, -1, eyeY - 3.5);
-  g.stroke({ width: 1, color: browColor });
-  g.moveTo(1, eyeY - 3.5);
-  g.quadraticCurveTo(3.5, eyeY - 5.2, 6, eyeY - 3.2);
-  g.stroke({ width: 1, color: browColor });
+  // Single highlight per eye
+  g.circle(-eyeSpacing + 0.6, eyeY - 0.3, 0.4);
+  g.fill({ color: 0xffffff, alpha: 0.85 });
+  g.circle(eyeSpacing + asymm * 0.3 + 0.6, eyeY - 0.3, 0.4);
+  g.fill({ color: 0xffffff, alpha: 0.85 });
 
-  // Nose — subtle bridge and tip
-  g.moveTo(0, headY + 0.5);
-  g.lineTo(-0.5, headY + 3);
-  g.stroke({ width: 0.4, color: SKIN_SHADOW, alpha: 0.3 });
-  g.circle(0, headY + 3, 1);
-  g.fill({ color: SKIN_SHADOW, alpha: 0.25 });
-  // Nostrils
-  g.circle(-1.2, headY + 3.5, 0.5);
-  g.fill({ color: SKIN_SHADOW, alpha: 0.2 });
-  g.circle(1.2, headY + 3.5, 0.5);
-  g.fill({ color: SKIN_SHADOW, alpha: 0.2 });
+  // === Eyebrows — thinner, more natural ===
+  const browColor = blend(hairColor, 0x000000, 0.3);
+  const browW = eyeSpacing + eyeW + 0.5;
+  g.moveTo(-browW, eyeY - 2.8 + v3 * 0.3);
+  g.quadraticCurveTo(-eyeSpacing, eyeY - 4 - v2 * 0.5, -eyeSpacing + eyeW, eyeY - 2.8);
+  g.stroke({ width: 0.7 + v1 * 0.2, color: browColor });
+  g.moveTo(eyeSpacing - eyeW + asymm * 0.2, eyeY - 2.8);
+  g.quadraticCurveTo(eyeSpacing + asymm * 0.2, eyeY - 4 - v3 * 0.5, browW + asymm * 0.2, eyeY - 2.8 + v1 * 0.3);
+  g.stroke({ width: 0.7 + v2 * 0.2, color: browColor });
 
-  // Mouth — more refined expressions
-  const mouthY = headY + 5.5;
-  const mouthColor = 0x9b7060;
+  // === Nose — defined bridge with dimensional tip ===
+  const noseTop = headY + 0.5;
+  const noseBottom = headY + 3.5 + v2 * 0.5;
+  // Bridge — light shadow line
+  g.moveTo(asymm * 0.3, noseTop);
+  g.quadraticCurveTo(-0.3 + asymm * 0.2, (noseTop + noseBottom) / 2, 0, noseBottom - 1);
+  g.stroke({ width: 0.5, color: SKIN_SHADOW, alpha: 0.2 });
+  // Nose tip — soft rounded shape
+  g.ellipse(0, noseBottom - 0.5, 1.8 + v1 * 0.4, 1.2);
+  g.fill({ color: SKIN_SHADOW, alpha: 0.12 });
+  // Nostril wings
+  g.ellipse(-1.5 - v3 * 0.2, noseBottom, 0.8, 0.5);
+  g.fill({ color: SKIN_SHADOW, alpha: 0.15 });
+  g.ellipse(1.5 + v1 * 0.2, noseBottom, 0.8, 0.5);
+  g.fill({ color: SKIN_SHADOW, alpha: 0.15 });
+  // Bridge highlight
+  g.moveTo(0.3, noseTop + 1);
+  g.lineTo(0.3, noseBottom - 1.5);
+  g.stroke({ width: 0.3, color: 0xffffff, alpha: 0.06 });
+
+  // === Mouth — natural, expressive ===
+  const mouthY = headY + 6 + v2 * 0.3;
+  const mouthW = 2 + v1 * 0.5;                  // width variation
+  const lipColor = 0xb07060;
+  const lipShadow = 0x8a5545;
+
   if (status === "working") {
-    // Slight confident smile
-    g.arc(0, mouthY - 1, 3.5, 0.15, Math.PI - 0.15);
-    g.stroke({ width: 1, color: mouthColor });
-    // Lower lip hint
-    g.arc(0, mouthY + 0.5, 2.5, 0.3, Math.PI - 0.3);
-    g.fill({ color: 0xc4877a, alpha: 0.2 });
+    // Gentle asymmetric smile
+    g.moveTo(-mouthW, mouthY);
+    g.quadraticCurveTo(-mouthW * 0.3, mouthY + 1.2, mouthW + asymm * 0.3, mouthY - 0.3);
+    g.stroke({ width: 0.8, color: lipColor });
+    // Lower lip volume
+    g.arc(asymm * 0.2, mouthY + 0.6, mouthW * 0.7, 0.2, Math.PI - 0.2);
+    g.fill({ color: lipShadow, alpha: 0.1 });
   } else if (status === "idle") {
-    // Relaxed neutral
-    g.moveTo(-2, mouthY);
-    g.quadraticCurveTo(0, mouthY + 0.8, 2, mouthY);
-    g.stroke({ width: 0.9, color: mouthColor });
+    // Relaxed, slightly parted
+    g.moveTo(-mouthW, mouthY + asymm * 0.2);
+    g.quadraticCurveTo(0, mouthY + 0.5 + v3 * 0.3, mouthW, mouthY);
+    g.stroke({ width: 0.7, color: lipColor });
+    // Philtrum shadow
+    g.ellipse(0, mouthY - 1, 0.6, 0.8);
+    g.fill({ color: SKIN_SHADOW, alpha: 0.06 });
   } else if (status === "paused") {
-    // Thoughtful slight frown
-    g.arc(0, mouthY + 2.5, 3, -Math.PI + 0.5, -0.5);
-    g.stroke({ width: 0.8, color: mouthColor });
+    // Pensive — slight downturn on one side
+    g.moveTo(-mouthW, mouthY + 0.3);
+    g.quadraticCurveTo(0, mouthY - 0.3, mouthW, mouthY + 0.5);
+    g.stroke({ width: 0.7, color: lipColor });
   } else {
-    // Offline — closed neutral
-    g.moveTo(-1.5, mouthY);
-    g.lineTo(1.5, mouthY);
-    g.stroke({ width: 0.6, color: mouthColor, alpha: 0.5 });
+    // Offline — closed, relaxed
+    g.moveTo(-mouthW * 0.7, mouthY);
+    g.lineTo(mouthW * 0.7, mouthY + asymm * 0.3);
+    g.stroke({ width: 0.5, color: lipColor, alpha: 0.4 });
   }
 
-  // Cheek blush — warm subtle glow
-  g.ellipse(-6.5, headY + 3.5, 2.5, 1.5);
-  g.fill({ color: 0xdea0a0, alpha: 0.12 });
-  g.ellipse(6.5, headY + 3.5, 2.5, 1.5);
-  g.fill({ color: 0xdea0a0, alpha: 0.12 });
+  // Cheek warmth — soft, placed near cheekbones
+  g.ellipse(-headW * 0.55, headY + 3, 2, 1.2);
+  g.fill({ color: 0xd49a8a, alpha: 0.08 });
+  g.ellipse(headW * 0.55, headY + 3, 2, 1.2);
+  g.fill({ color: 0xd49a8a, alpha: 0.08 });
 
-  // Chin shadow
-  g.ellipse(0, headY + 8, 5, 1.5);
-  g.fill({ color: SKIN_SHADOW, alpha: 0.1 });
+  // Chin
+  g.ellipse(0, headY + headH - 1, 4, 1.2);
+  g.fill({ color: SKIN_SHADOW, alpha: 0.08 });
 }
 
 function drawHumanoidBody(g: Graphics, torsoColor: number, headY: number) {
