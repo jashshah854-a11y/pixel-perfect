@@ -123,12 +123,9 @@ function drawHumanoidBody(g: Graphics, torsoColor: number, headY: number) {
   const torsoY = neckY + 3;
   g.roundRect(-8, torsoY, 16, 18, 4);
   g.fill(torsoColor);
+  // Collar/lapel subtle shading
   g.roundRect(-6, torsoY, 12, 4, 2);
   g.fill({ color: 0xffffff, alpha: 0.08 });
-  g.moveTo(-4, torsoY + 1);
-  g.lineTo(0, torsoY + 4);
-  g.lineTo(4, torsoY + 1);
-  g.stroke({ width: 0.5, color: 0xffffff, alpha: 0.15 });
 
   const armY = torsoY + 2;
   g.roundRect(-12, armY, 5, 14, 2.5);
