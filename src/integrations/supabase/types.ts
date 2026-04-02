@@ -151,6 +151,36 @@ export type Database = {
         }
         Relationships: []
       }
+      task_assignments: {
+        Row: {
+          agent_id: string
+          claimed_at: string
+          fit_score: number
+          id: string
+          reasoning: string | null
+          role: string
+          task_id: string
+        }
+        Insert: {
+          agent_id: string
+          claimed_at?: string
+          fit_score?: number
+          id?: string
+          reasoning?: string | null
+          role?: string
+          task_id: string
+        }
+        Update: {
+          agent_id?: string
+          claimed_at?: string
+          fit_score?: number
+          id?: string
+          reasoning?: string | null
+          role?: string
+          task_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assigned_to: string | null

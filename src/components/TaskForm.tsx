@@ -75,11 +75,14 @@ export function TaskForm({ open, onClose, agents, defaultAgent, onSubmit }: Task
           <div>
             <label className="text-sm text-muted-foreground">Assign to</label>
             <select value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm">
-              <option value="">Unassigned</option>
+              <option value="">⚡ Auto-assign (AI routing)</option>
               {agents.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>
+            {!assignedTo && (
+              <p className="text-[10px] text-muted-foreground mt-1">Agents will evaluate and claim this task automatically</p>
+            )}
           </div>
           <div>
             <label className="text-sm text-muted-foreground">Source</label>

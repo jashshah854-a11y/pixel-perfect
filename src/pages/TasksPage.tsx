@@ -3,10 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
+import { AssignmentFeed } from "@/components/AssignmentFeed";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Zap } from "lucide-react";
+import { toast } from "sonner";
 
 const columns = [
   { key: "queued", label: "Queued" },
@@ -50,10 +52,24 @@ export default function TasksPage() {
 
   const createTask = useMutation({
     mutationFn: async (task: { title: string; description: string; priority: string; assigned_to: string | null; source: string }) => {
-      await supabase.from("tasks").insert(task);
+      const { data, error } = await supabase.from("tasks").insert(task).select("id").single();
+      if (error) throw error;
+      // Auto-assign via edge function
+      try {
+        await supabase.functions.invoke("assign-task", { body: { task_id: data.id } });
+        toast.success("Task created & auto-assigned to best-fit agent");
+      } catch {
+        toast.info("Task created. Auto-assignment pending.");
+      }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+    },
   });
+
+  const taskMap = Object.fromEntries((tasks || []).map((t) => [t.id, t.title]));
 
   const filtered = tasks?.filter((t) => {
     if (filterAgent && t.assigned_to !== filterAgent) return false;
@@ -114,6 +130,15 @@ export default function TasksPage() {
             })}
           </div>
         )}
+
+        {/* Assignment Feed */}
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-medium">Assignment Log</h3>
+          </div>
+          <AssignmentFeed agentMap={agentMap} taskMap={taskMap} />
+        </div>
       </div>
 
       <TaskForm
