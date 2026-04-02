@@ -179,6 +179,16 @@ export function buildScene(
     const clock = drawWallClock(clampedRoomW - 24, 15);
     room.addChild(clock);
 
+    // Whiteboard in top-right area
+    const wb = drawWhiteboard(clampedRoomW - 40, 28);
+    room.addChild(wb);
+
+    // Filing cabinet in even-indexed rooms
+    if (idx % 2 === 0) {
+      const fc = drawFilingCabinet(clampedRoomW - 18, rh - 28);
+      room.addChild(fc);
+    }
+
     const deptAgents = byDept[dept.name] || [];
     const perRow = slotsPerRow(clampedRoomW);
 
