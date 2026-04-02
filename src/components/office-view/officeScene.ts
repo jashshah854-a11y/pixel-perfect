@@ -2,6 +2,7 @@ import { Container } from "pixi.js";
 import {
   drawRoom, drawDesk, drawAgent, drawChair, drawWallClock,
   drawCEO, drawCollabTable, drawHallway, drawBreakRoom, drawBed,
+  drawWhiteboard, drawFilingCabinet, drawDeskLamp, drawRug,
   DESK_W, DESK_H, getAgentColor,
 } from "./officeDrawing";
 
