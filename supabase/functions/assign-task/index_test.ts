@@ -264,11 +264,7 @@ Deno.test("Stage 5: Learning persists and influences future assignments", async 
   assertExists(firstOwner, "First task should have owner");
 
   // Complete and learn
-  await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${task1.id}`, {
-    method: "PATCH",
-    headers: { ...headers, "Prefer": "return=representation" },
-    body: JSON.stringify({ status: "done", completed_at: new Date().toISOString() }),
-  });
+  await dbPatch("tasks", `id=eq.${task1.id}`, { status: "done", completed_at: new Date().toISOString() });
   await invokeFunction("agent-learn", { task_id: task1.id });
 
   // Create similar second task
