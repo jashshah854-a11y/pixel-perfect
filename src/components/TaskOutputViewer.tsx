@@ -85,22 +85,33 @@ export function TaskOutputViewer({ taskId, taskTitle, isCompleted }: TaskOutputV
       {expanded && (
         <div className="mt-2 space-y-2 animate-fade-in">
           {outputs?.map((o) => (
-            <div key={o.id} className="rounded-md border border-border/30 bg-card/40 p-2.5 text-xs space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{o.title}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary capitalize">{o.output_type}</span>
+            <div key={o.id}>
+              {o.output_type === "code" ? (
+                <CodeOutputViewer
+                  code={o.content}
+                  format={o.format}
+                  title={o.title}
+                  outputType={o.output_type}
+                />
+              ) : (
+                <div className="rounded-md border border-border/30 bg-card/40 p-2.5 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{o.title}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary capitalize">{o.output_type}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground/60">{format(new Date(o.created_at), "MMM d, HH:mm")}</span>
+                      <button onClick={() => generatePdf(o)} className="hover:text-primary transition-colors">
+                        <Download className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-muted-foreground whitespace-pre-wrap max-h-32 overflow-y-auto leading-relaxed">
+                    {o.content || "No content yet."}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground/60">{format(new Date(o.created_at), "MMM d, HH:mm")}</span>
-                  <button onClick={() => generatePdf(o)} className="hover:text-primary transition-colors">
-                    <Download className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-              <div className="text-muted-foreground whitespace-pre-wrap max-h-32 overflow-y-auto leading-relaxed">
-                {o.content || "No content yet."}
-              </div>
+              )}
             </div>
           ))}
 
