@@ -592,8 +592,14 @@ function updateWallClocks() {
 
 // === Collaboration graph rendering ===
 function renderCollabGraph(agentSprites: AgentSprite[]) {
-  if (!collabGraphics || collabLines.length === 0) {
-    if (collabGraphics) collabGraphics.clear();
+  if (!collabGraphics) return;
+  
+  // Auto-expire old lines
+  const now = Date.now();
+  collabLines = collabLines.filter(c => now - c.createdAt < COLLAB_TTL_MS);
+  
+  if (collabLines.length === 0) {
+    collabGraphics.clear();
     return;
   }
 
@@ -604,10 +610,15 @@ function renderCollabGraph(agentSprites: AgentSprite[]) {
     const toSprite = agentSprites.find(s => s.agent.id === line.toAgentId);
     if (!fromSprite || !toSprite) continue;
 
+    // Only show if at least one agent is working
+    if (fromSprite.agent.status !== "working" && toSprite.agent.status !== "working") continue;
+
     const fromX = fromSprite.baseX;
     const fromY = fromSprite.baseY;
     const toX = toSprite.baseX;
     const toY = toSprite.baseY;
+
+    const lineColor = COLLAB_COLORS[line.collabType] || 0x3b82f6;
 
     // Animated pulse along the line
     const pulse = Math.sin(tick * 0.04) * 0.15;
@@ -622,11 +633,10 @@ function renderCollabGraph(agentSprites: AgentSprite[]) {
     for (let i = 0; i < segments; i++) {
       const t1 = i / segments;
       const t2 = (i + 0.5) / segments;
-      // Animate dash flow
       const offset = (tick * 0.01) % 1;
       const at1 = (t1 + offset) % 1;
       const at2 = (t2 + offset) % 1;
-      if (at2 < at1) continue; // skip wrap-around segment
+      if (at2 < at1) continue;
 
       const x1 = fromX + dx * at1;
       const y1 = fromY + dy * at1;
@@ -635,14 +645,14 @@ function renderCollabGraph(agentSprites: AgentSprite[]) {
 
       collabGraphics.moveTo(x1, y1);
       collabGraphics.lineTo(x2, y2);
-      collabGraphics.stroke({ width: 1.2, color: 0x3b82f6, alpha: alpha * 0.6 });
+      collabGraphics.stroke({ width: 1.2, color: lineColor, alpha: alpha * 0.6 });
     }
 
     // Glow dots at endpoints
     collabGraphics.circle(fromX, fromY - 5, 2.5);
-    collabGraphics.fill({ color: 0x3b82f6, alpha: alpha * 0.4 });
+    collabGraphics.fill({ color: lineColor, alpha: alpha * 0.4 });
     collabGraphics.circle(toX, toY - 5, 2.5);
-    collabGraphics.fill({ color: 0x3b82f6, alpha: alpha * 0.4 });
+    collabGraphics.fill({ color: lineColor, alpha: alpha * 0.4 });
   }
 }
 
