@@ -6,31 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Simple rule-based subtask extraction from plan content
 function extractSubtasks(title: string, content: string): { title: string; description: string; keywords: string[] }[] {
   const text = `${title} ${content}`.toLowerCase();
   const subtasks: { title: string; description: string; keywords: string[] }[] = [];
 
-  // Parse markdown headers/bullets as potential subtasks
   const lines = content.split('\n').filter(l => l.trim());
   const bulletItems: string[] = [];
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
     const headerMatch = trimmed.match(/^#{2,3}\s+(.+)/);
-    if (headerMatch) {
-      bulletItems.push(headerMatch[1]);
-      continue;
-    }
+    if (headerMatch) { bulletItems.push(headerMatch[1]); continue; }
     const bulletMatch = trimmed.match(/^[-*]\s+(.+)/);
-    if (bulletMatch) {
-      bulletItems.push(bulletMatch[1]);
-      continue;
-    }
+    if (bulletMatch) { bulletItems.push(bulletMatch[1]); continue; }
     const numMatch = trimmed.match(/^\d+[.)]\s+(.+)/);
-    if (numMatch) {
-      bulletItems.push(numMatch[1]);
-    }
+    if (numMatch) { bulletItems.push(numMatch[1]); }
   }
 
   if (bulletItems.length > 0) {
@@ -93,108 +83,112 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Load plan
-    const { data: plan, error: planErr } = await supabase
-      .from('plans')
-      .select('*')
-      .eq('id', plan_id)
-      .single();
+    // Load plan + agents in parallel
+    const [planRes, agentsRes] = await Promise.all([
+      supabase.from('plans').select('*').eq('id', plan_id).single(),
+      supabase.from('agents').select('id, name, role').or('name.ilike.%omega%,role.ilike.%orchestrat%'),
+    ]);
 
-    if (planErr || !plan) throw new Error("Plan not found");
+    if (planRes.error || !planRes.data) throw new Error("Plan not found");
+    const plan = planRes.data;
+    const omega = (agentsRes.data || [])[0] || null;
 
-    // Load agents to find Omega
-    const { data: agents } = await supabase.from('agents').select('*');
-    const omega = agents?.find((a: any) => 
-      a.name.toLowerCase() === 'omega' || 
-      a.role.toLowerCase().includes('orchestrat')
-    );
-
-    // Extract subtasks
     const subtasks = extractSubtasks(plan.title, plan.markdown_content || "");
 
-    // Create tasks and assign each
-    const results = [];
+    const results: any[] = [];
 
-    // First: create coordination task owned by Omega
+    // Batch-insert all subtasks + coordination task in one call
+    const taskInserts = subtasks.map(sub => ({
+      title: sub.title,
+      description: sub.description,
+      priority: 'medium',
+      status: 'queued',
+      source: 'plan',
+    }));
+
+    // Add coordination task for Omega
     if (omega) {
-      const { data: coordTask } = await supabase
-        .from('tasks')
-        .insert({
-          title: `Orchestrate: ${plan.title}`,
-          description: `Omega coordinates execution of plan: ${plan.title}`,
-          priority: 'high',
-          status: 'in_progress',
-          source: 'plan',
-          assigned_to: omega.id,
-        })
-        .select('id')
-        .single();
-
-      if (coordTask) {
-        await supabase.from('task_assignments').insert({
-          task_id: coordTask.id,
-          agent_id: omega.id,
-          role: 'owner',
-          fit_score: 100,
-          reasoning: 'Omega is the primary orchestrator for all plan decomposition and coordination.',
-        });
-
-        results.push({
-          task_id: coordTask.id,
-          title: `Orchestrate: ${plan.title}`,
-          owner: omega.id,
-          owner_name: omega.name,
-          assignments: [{ agent_id: omega.id, role: 'owner' }],
-        });
-      }
+      taskInserts.unshift({
+        title: `Orchestrate: ${plan.title}`,
+        description: `Omega coordinates execution of plan: ${plan.title}`,
+        priority: 'high',
+        status: 'in_progress',
+        source: 'plan',
+      });
     }
 
-    // Then: create and assign subtasks
-    for (const sub of subtasks) {
-      const { data: task, error: taskErr } = await supabase
-        .from('tasks')
-        .insert({
-          title: sub.title,
-          description: sub.description,
-          priority: 'medium',
-          status: 'queued',
-          source: 'plan',
-        })
-        .select('id')
-        .single();
+    // Single batch insert for all tasks
+    const { data: createdTasks, error: insertErr } = await supabase
+      .from('tasks')
+      .insert(taskInserts)
+      .select('id, title');
 
-      if (taskErr || !task) continue;
+    if (insertErr || !createdTasks) throw new Error("Failed to create tasks");
 
-      const assignUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/assign-task`;
-      const assignRes = await fetch(assignUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-        },
-        body: JSON.stringify({ task_id: task.id }),
+    // Handle Omega coordination task (first in array if omega exists)
+    let subtaskStartIdx = 0;
+    if (omega) {
+      const coordTask = createdTasks[0];
+      // Assign Omega directly — no need to call assign-task
+      await supabase.from('task_assignments').insert({
+        task_id: coordTask.id,
+        agent_id: omega.id,
+        role: 'owner',
+        fit_score: 100,
+        reasoning: 'Omega is the primary orchestrator for all plan decomposition.',
       });
+      await supabase.from('tasks').update({ assigned_to: omega.id }).eq('id', coordTask.id);
 
-      const assignData = await assignRes.json();
       results.push({
-        task_id: task.id,
-        title: sub.title,
-        owner: assignData.owner || null,
-        owner_name: assignData.owner_name || null,
-        assignments: assignData.assignments || [],
+        task_id: coordTask.id,
+        title: coordTask.title,
+        owner: omega.id,
+        owner_name: omega.name,
+        assignments: [{ agent_id: omega.id, role: 'owner' }],
       });
+      subtaskStartIdx = 1;
     }
 
-    // Update plan status to executing
-    await supabase.from('plans').update({ status: 'executing' }).eq('id', plan_id);
+    // Parallel assign-task calls for all subtasks
+    const assignUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/assign-task`;
+    const assignHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+    };
 
-    // Inbox notification from Omega
-    const fromAgent = omega?.id || 'omega';
-    await supabase.from('inbox').insert({
-      from_agent: fromAgent,
-      message: `Omega received your plan "${plan.title}" and distributed ${results.length} tasks across the team.`,
-      type: 'plan_decompose',
+    const assignPromises = createdTasks.slice(subtaskStartIdx).map(async (task) => {
+      try {
+        const res = await fetch(assignUrl, {
+          method: 'POST',
+          headers: assignHeaders,
+          body: JSON.stringify({ task_id: task.id }),
+        });
+        const data = await res.json();
+        return {
+          task_id: task.id,
+          title: task.title,
+          owner: data.owner || null,
+          owner_name: data.owner_name || null,
+          assignments: data.assignments || [],
+        };
+      } catch {
+        return { task_id: task.id, title: task.title, owner: null, owner_name: null, assignments: [] };
+      }
     });
+
+    const assignResults = await Promise.all(assignPromises);
+    results.push(...assignResults);
+
+    // Update plan status + inbox notification in parallel
+    const fromAgent = omega?.id || 'omega';
+    await Promise.all([
+      supabase.from('plans').update({ status: 'executing' }).eq('id', plan_id),
+      supabase.from('inbox').insert({
+        from_agent: fromAgent,
+        message: `Omega received your plan "${plan.title}" and distributed ${results.length} tasks across the team.`,
+        type: 'plan_decompose',
+      }),
+    ]);
 
     return new Response(JSON.stringify({ ok: true, subtasks: results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
