@@ -375,11 +375,7 @@ Deno.test("Stage 8: Full pipeline - input → assign → execute → output → 
   assertEquals(mid.assigned_to, assignResult.owner, "Step 3: Correct agent assigned");
 
   // 4. EXECUTION: Complete task
-  await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${task.id}`, {
-    method: "PATCH",
-    headers: { ...headers, "Prefer": "return=representation" },
-    body: JSON.stringify({ status: "done", completed_at: new Date().toISOString() }),
-  });
+  await dbPatch("tasks", `id=eq.${task.id}`, { status: "done", completed_at: new Date().toISOString() });
 
   // 5. OUTPUT: Generate structured output
   const outputRows = await dbInsert("task_outputs", {
