@@ -228,7 +228,7 @@ export function InboxMessage({ message: msg, agentName }: InboxMessageProps) {
         }
       }
       await updateStatus("acted");
-    } catch (err) {
+    } catch {
       toast.error("Action failed");
     } finally {
       setActing(false);
