@@ -37,6 +37,15 @@ async function dbDelete(table: string, filter: string) {
   await res.text();
 }
 
+async function dbPatch(table: string, filter: string, body: Record<string, unknown>) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`, {
+    method: "PATCH",
+    headers: { ...headers, "Prefer": "return=representation" },
+    body: JSON.stringify(body),
+  });
+  await res.text(); // consume body to prevent leaks
+}
+
 async function invokeFunction(name: string, body: Record<string, unknown>) {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
     method: "POST",
