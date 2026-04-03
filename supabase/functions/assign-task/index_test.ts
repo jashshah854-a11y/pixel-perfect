@@ -205,11 +205,7 @@ Deno.test("Stage 4: Task completion generates output and triggers learning", asy
   assert(assignData.ok, "Assignment should succeed");
 
   // Simulate completion: update task status + generate output
-  await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${task.id}`, {
-    method: "PATCH",
-    headers: { ...headers, "Prefer": "return=representation" },
-    body: JSON.stringify({ status: "done", completed_at: new Date().toISOString() }),
-  });
+  await dbPatch("tasks", `id=eq.${task.id}`, { status: "done", completed_at: new Date().toISOString() });
 
   // Generate output (mimics TaskCard behavior)
   const outputContent = `## Task: Write API documentation\n### Execution Summary\n- **Status**: Completed\n- **Priority**: medium\n### Outcome\nTask executed and completed successfully.`;
