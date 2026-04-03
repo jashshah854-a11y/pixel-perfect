@@ -7,12 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   FileText, CheckCircle, Clock, Download, ChevronDown, ChevronUp,
   Code, FileSearch, BarChart3, Play, Eye, Package, Bot, Zap,
-  Trash2, RefreshCw,
+  RefreshCw,
 } from "lucide-react";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
