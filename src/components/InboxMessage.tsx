@@ -147,12 +147,12 @@ function inferReasoning(message: string): string {
   return "System intelligence identified this as relevant to current operational context.";
 }
 
-export function InboxMessage({ message: msg, agentName, agents }: InboxMessageProps) {
+export function InboxMessage({ message: msg, agentName }: InboxMessageProps) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [acting, setActing] = useState(false);
 
-  const typeConfig = TYPE_CONFIG[msg.type] || TYPE_CONFIG.update;
+  const StatusIcon = STATUS_ICONS[msg.status] || Eye;
   const StatusIcon = STATUS_ICONS[msg.status] || Eye;
   const sections = parseInboxContent(msg.message, msg.metadata as Record<string, any> | null);
 
