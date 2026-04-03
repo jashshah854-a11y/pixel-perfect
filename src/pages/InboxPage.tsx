@@ -43,15 +43,7 @@ export default function InboxPage() {
   const unreadCount = messages?.filter((m) => !m.read).length || 0;
   const agentMap = Object.fromEntries((agents || []).map((a) => [a.id, a.name]));
 
-  const markRead = useMutation({
-    mutationFn: async (id: string) => {
-      await supabase.from("inbox").update({ read: true }).eq("id", id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["inbox-all"] });
-      queryClient.invalidateQueries({ queryKey: ["inbox-unread"] });
-    },
-  });
+  // markRead is now handled internally by InboxMessage component
 
   const markAllRead = useMutation({
     mutationFn: async () => {
