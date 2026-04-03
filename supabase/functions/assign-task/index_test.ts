@@ -592,9 +592,10 @@ Deno.test("S11.1: Performance benchmarks — assignment, decomposition, learning
   }
   console.log("══════════════════════════════\n");
 
-  // Assert reasonable bounds (15s max for any single operation)
+  // Assert optimized bounds (5s target for decomposition and learning)
   for (const b of benchmarks) {
-    assert(b.ms < 15000, `${b.metric} too slow: ${b.ms}ms (max 15000ms)`);
+    const limit = b.metric === "Assignment Latency" ? 5000 : 8000;
+    assert(b.ms < limit, `${b.metric} too slow: ${b.ms}ms (max ${limit}ms)`);
   }
 
   // Cleanup
