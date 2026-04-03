@@ -8,7 +8,7 @@ import { IntentPreview } from "@/components/IntentPreview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Zap, Brain, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Zap, Brain, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { playClaimChime, playDropConfirm } from "@/lib/sounds";
 
