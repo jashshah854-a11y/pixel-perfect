@@ -72,7 +72,7 @@ export default function DeliverablesPage() {
     },
   });
 
-  const { data: plans } = useQuery({
+  useQuery({
     queryKey: ["plans"],
     queryFn: async () => {
       const { data } = await supabase.from("plans").select("id, title");
