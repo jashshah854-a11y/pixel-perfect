@@ -32,7 +32,19 @@ interface CollabLine {
   toAgentId: string;
   taskTitle: string;
   alpha: number;
+  collabType: string;
+  createdAt: number; // timestamp ms
 }
+
+const COLLAB_COLORS: Record<string, number> = {
+  handoff: 0x3b82f6,
+  request_help: 0xf59e0b,
+  share_finding: 0x10b981,
+  review: 0xa855f7,
+};
+
+// Auto-expire after 5 minutes
+const COLLAB_TTL_MS = 5 * 60 * 1000;
 
 let collabLines: CollabLine[] = [];
 let collabGraphics: Graphics | null = null;
@@ -41,7 +53,8 @@ export function setCollabGraphics(g: Graphics) {
   collabGraphics = g;
 }
 
-export function updateCollaborations(collabs: Array<{ from_agent: string; to_agent: string; status: string; message: string }>) {
+export function updateCollaborations(collabs: Array<{ from_agent: string; to_agent: string; status: string; message: string; collab_type?: string; created_at?: string }>) {
+  const now = Date.now();
   collabLines = collabs
     .filter(c => c.status === "pending" || c.status === "in_progress")
     .map(c => ({
@@ -49,7 +62,10 @@ export function updateCollaborations(collabs: Array<{ from_agent: string; to_age
       toAgentId: c.to_agent,
       taskTitle: c.message,
       alpha: 0.5,
-    }));
+      collabType: c.collab_type || "share_finding",
+      createdAt: c.created_at ? new Date(c.created_at).getTime() : now,
+    }))
+    .filter(c => now - c.createdAt < COLLAB_TTL_MS); // auto-expire old ones
 }
 
 // === Claim notification system ===
