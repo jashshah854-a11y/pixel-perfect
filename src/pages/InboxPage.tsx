@@ -5,7 +5,7 @@ import { InboxMessage } from "@/components/InboxMessage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Inbox, Eye, Zap, CheckCircle, XCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,10 +18,19 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+const STATUS_FILTERS = [
+  { value: "", label: "All", icon: Inbox },
+  { value: "unread", label: "Unread", icon: Eye },
+  { value: "acted", label: "Acted", icon: Zap },
+  { value: "completed", label: "Completed", icon: CheckCircle },
+  { value: "dismissed", label: "Dismissed", icon: XCircle },
+] as const;
+
 export default function InboxPage() {
   const queryClient = useQueryClient();
   const [filterType, setFilterType] = useState("");
   const [filterAgent, setFilterAgent] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   const { data: messages, isLoading } = useQuery({
     queryKey: ["inbox-all"],
@@ -43,11 +52,14 @@ export default function InboxPage() {
   const unreadCount = messages?.filter((m) => !m.read).length || 0;
   const agentMap = Object.fromEntries((agents || []).map((a) => [a.id, a.name]));
 
-  // markRead is now handled internally by InboxMessage component
+  const statusCounts: Record<string, number> = {};
+  for (const m of messages || []) {
+    statusCounts[m.status] = (statusCounts[m.status] || 0) + 1;
+  }
 
   const markAllRead = useMutation({
     mutationFn: async () => {
-      await supabase.from("inbox").update({ read: true }).eq("read", false);
+      await supabase.from("inbox").update({ read: true, status: "opened" }).eq("read", false);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inbox-all"] });
@@ -69,6 +81,7 @@ export default function InboxPage() {
   const filtered = messages?.filter((m) => {
     if (filterType && m.type !== filterType) return false;
     if (filterAgent && m.from_agent !== filterAgent) return false;
+    if (filterStatus && m.status !== filterStatus) return false;
     return true;
   });
 
@@ -109,6 +122,36 @@ export default function InboxPage() {
           </div>
         </div>
 
+        {/* Status filter tabs */}
+        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/30 border border-border/30 w-fit">
+          {STATUS_FILTERS.map(({ value, label, icon: Icon }) => {
+            const count = value ? (statusCounts[value] || 0) : (messages?.length || 0);
+            const isActive = filterStatus === value;
+            return (
+              <button
+                key={value}
+                onClick={() => setFilterStatus(value)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                }`}
+              >
+                <Icon className="h-3 w-3" />
+                {label}
+                {count > 0 && (
+                  <span className={`text-[9px] px-1 py-0.5 rounded-full min-w-[16px] text-center ${
+                    isActive ? "bg-primary-foreground/20" : "bg-muted/50"
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Type and agent filters */}
         <div className="flex gap-2 flex-wrap">
           <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm">
             <option value="">All Types</option>
@@ -116,6 +159,8 @@ export default function InboxPage() {
             <option value="question">Question</option>
             <option value="update">Update</option>
             <option value="alert">Alert</option>
+            <option value="recommendation">Recommendation</option>
+            <option value="plan_decompose">Plan Decompose</option>
           </select>
           <select value={filterAgent} onChange={(e) => setFilterAgent(e.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm">
             <option value="">All Agents</option>
@@ -138,7 +183,9 @@ export default function InboxPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No messages yet.</p>
+          <p className="text-sm text-muted-foreground">
+            {filterStatus ? `No ${filterStatus} messages.` : "No messages yet."}
+          </p>
         )}
       </div>
     </Layout>
