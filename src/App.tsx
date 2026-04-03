@@ -13,6 +13,7 @@ import IntegrationsPage from "./pages/IntegrationsPage.tsx";
 import OfficePage from "./pages/OfficePage.tsx";
 import AnalyticsPage from "./pages/AnalyticsPage.tsx";
 import ClientViewPage from "./pages/ClientViewPage.tsx";
+import DeliverablesPage from "./pages/DeliverablesPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
