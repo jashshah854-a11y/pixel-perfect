@@ -153,7 +153,6 @@ export function InboxMessage({ message: msg, agentName }: InboxMessageProps) {
   const [acting, setActing] = useState(false);
 
   const StatusIcon = STATUS_ICONS[msg.status] || Eye;
-  const StatusIcon = STATUS_ICONS[msg.status] || Eye;
   const sections = parseInboxContent(msg.message, msg.metadata as Record<string, any> | null);
 
   const updateStatus = async (status: string) => {

@@ -142,7 +142,6 @@ export default function InboxPage() {
                 key={msg.id}
                 message={msg}
                 agentName={agentMap[msg.from_agent || ""] || undefined}
-                onClick={() => !msg.read && markRead.mutate(msg.id)}
               />
             ))}
           </div>
