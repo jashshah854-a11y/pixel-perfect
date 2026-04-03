@@ -82,7 +82,7 @@ Return JSON array: [{type:"pattern"|"preference"|"correction", content:string, c
 
         try {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000);
+          const timeout = setTimeout(() => controller.abort(), 4000);
 
           const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
