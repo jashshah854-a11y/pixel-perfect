@@ -27,33 +27,39 @@ export function TaskCard({ task, agentName }: TaskCardProps) {
       completed_at: new Date().toISOString(),
     }).eq("id", task.id);
 
-    // Auto-generate output
-    const outputContent = [
-      `## Task: ${task.title}`,
-      task.description ? `\n### Description\n${task.description}` : "",
-      `\n### Execution Summary`,
-      `- **Status**: Completed`,
-      `- **Priority**: ${task.priority}`,
-      `- **Source**: ${task.source}`,
-      agentName ? `- **Handled by**: ${agentName}` : "",
-      `- **Completed at**: ${new Date().toLocaleString()}`,
-      `\n### Outcome`,
-      `Task executed and completed successfully. Learnings extracted and stored in agent memory.`,
-    ].filter(Boolean).join("\n");
+    // Execute: generate real code output + learn in parallel
+    const [execResult, learnResult] = await Promise.allSettled([
+      supabase.functions.invoke("agent-execute", { body: { task_id: task.id } }),
+      supabase.functions.invoke("agent-learn", { body: { task_id: task.id } }),
+    ]);
 
-    await supabase.from("task_outputs").insert({
-      task_id: task.id,
-      title: `${task.title} — Report`,
-      content: outputContent,
-      output_type: "report",
-      format: "markdown",
-    });
+    const execOk = execResult.status === "fulfilled" && !execResult.value.error;
+    const learnOk = learnResult.status === "fulfilled" && !learnResult.value.error;
 
-    try {
-      await supabase.functions.invoke("agent-learn", { body: { task_id: task.id } });
-      toast.success("Task completed — output generated & agents learning");
-    } catch {
-      toast.success("Task completed — output generated");
+    if (execOk && learnOk) {
+      toast.success("Task completed — code generated & agents learning");
+    } else if (execOk) {
+      toast.success("Task completed — code generated");
+    } else {
+      // Fallback: generate markdown report if execution failed
+      const outputContent = [
+        `## Task: ${task.title}`,
+        task.description ? `\n### Description\n${task.description}` : "",
+        `\n### Execution Summary`,
+        `- **Status**: Completed`,
+        `- **Priority**: ${task.priority}`,
+        agentName ? `- **Handled by**: ${agentName}` : "",
+        `- **Completed at**: ${new Date().toLocaleString()}`,
+      ].filter(Boolean).join("\n");
+
+      await supabase.from("task_outputs").insert({
+        task_id: task.id,
+        title: `${task.title} — Report`,
+        content: outputContent,
+        output_type: "report",
+        format: "markdown",
+      });
+      toast.success("Task completed — report generated");
     }
 
     queryClient.invalidateQueries({ queryKey: ["tasks"] });
