@@ -167,6 +167,22 @@ serve(async (req) => {
       format: formatMap[outputType] || "ts",
     });
 
+    // Notify: task completed
+    try {
+      const agentName = assignments[0]?.agent_id || 'System';
+      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({
+          event_type: 'task_completed',
+          payload: { task_id, task_title: task.title, agent_id: agentName, agent_name: agentName },
+        }),
+      });
+    } catch { /* best effort */ }
+
     // Also generate an execution summary
     const summaryContent = [
       `## Execution: ${task.title}`,
