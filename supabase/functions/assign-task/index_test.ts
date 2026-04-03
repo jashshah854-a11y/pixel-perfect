@@ -607,6 +607,119 @@ Deno.test("S11.1: Performance benchmarks — assignment, decomposition, learning
 });
 
 // ═══════════════════════════════════════════════════════════════════
+// STAGE 11.5: EDGE CASE TESTING
+// ═══════════════════════════════════════════════════════════════════
+
+Deno.test("S11.5a: Empty plan content — graceful decomposition", async () => {
+  const planRows = await dbInsert("plans", {
+    title: "Empty content plan",
+    markdown_content: "",
+    status: "draft",
+  });
+  const plan = Array.isArray(planRows) ? planRows[0] : planRows;
+
+  const { status, data } = await invokeFunction("decompose-plan", { plan_id: plan.id });
+  assertEquals(status, 200);
+  assert(data.ok, "Should succeed even with empty content");
+  assert(Array.isArray(data.subtasks) && data.subtasks.length >= 1, "Should generate fallback subtasks");
+
+  for (const sub of data.subtasks) {
+    if (sub.task_id) await cleanupTask(sub.task_id);
+  }
+  await dbDelete("inbox", `message=like.*Empty content*`);
+  await dbDelete("plans", `id=eq.${plan.id}`);
+});
+
+Deno.test("S11.5b: Task with no description — assignment still works", async () => {
+  const rows = await dbInsert("tasks", {
+    title: "No description task test",
+    priority: "low",
+    source: "manual",
+  });
+  const task = Array.isArray(rows) ? rows[0] : rows;
+
+  const { status, data } = await invokeFunction("assign-task", { task_id: task.id });
+  assertEquals(status, 200);
+  assert(data.ok, "Should assign even without description");
+  assertExists(data.owner, "Should still find an owner");
+
+  // Learning should also work on description-less tasks
+  await dbPatch("tasks", `id=eq.${task.id}`, { status: "done", completed_at: new Date().toISOString() });
+  const { status: ls, data: ld } = await invokeFunction("agent-learn", { task_id: task.id });
+  assertEquals(ls, 200);
+  assert(ld.ok);
+
+  await cleanupTask(task.id, "No description");
+});
+
+Deno.test("S11.5c: All agents busy — still assigns correctly", async () => {
+  // Set all agents to working
+  const agents = await dbQuery("agents", {});
+  const originalStatuses: Record<string, string> = {};
+  for (const a of agents) {
+    originalStatuses[a.id] = a.status;
+    await dbPatch("agents", `id=eq.${a.id}`, { status: "working", current_task: "busy-test" });
+  }
+
+  const rows = await dbInsert("tasks", {
+    title: "All agents busy test",
+    description: "Should still assign despite all agents working",
+    priority: "high",
+    source: "manual",
+  });
+  const task = Array.isArray(rows) ? rows[0] : rows;
+
+  const { status, data } = await invokeFunction("assign-task", { task_id: task.id });
+  assertEquals(status, 200);
+  assert(data.ok, "Should succeed even with all agents busy");
+  assertExists(data.owner, "Must still assign an owner");
+
+  // Restore agents
+  for (const [id, st] of Object.entries(originalStatuses)) {
+    await dbPatch("agents", `id=eq.${id}`, { status: st, current_task: null });
+  }
+  await cleanupTask(task.id, "All agents busy");
+});
+
+Deno.test("S11.5d: Concurrent task submissions — no corruption", async () => {
+  const tasks = await Promise.all(
+    Array.from({ length: 3 }, (_, i) =>
+      dbInsert("tasks", {
+        title: `Concurrent test ${i + 1}: build feature`,
+        description: "Concurrent submission test",
+        priority: "medium",
+        source: "manual",
+      })
+    )
+  );
+
+  const taskObjs = tasks.map(r => Array.isArray(r) ? r[0] : r);
+
+  // Fire all assignments concurrently
+  const assignResults = await Promise.all(
+    taskObjs.map(t => invokeFunction("assign-task", { task_id: t.id }))
+  );
+
+  for (const { status, data } of assignResults) {
+    assertEquals(status, 200);
+    assert(data.ok, "Concurrent assignment should succeed");
+    assertExists(data.owner);
+  }
+
+  // Verify each task has its own assignments (no cross-contamination)
+  for (const t of taskObjs) {
+    const assignments = await dbQuery("task_assignments", { task_id: `eq.${t.id}` });
+    assert(assignments.length > 0, `Task ${t.id} should have assignments`);
+    for (const a of assignments) {
+      assertEquals(a.task_id, t.id, "Assignment must reference correct task");
+    }
+  }
+
+  for (const t of taskObjs) await cleanupTask(t.id, "Concurrent test");
+  await dbDelete("inbox", `type=eq.task_claim`);
+});
+
+// ═══════════════════════════════════════════════════════════════════
 // STAGE 12: MULTI-RUN CONSISTENCY VALIDATION
 // ═══════════════════════════════════════════════════════════════════
 
