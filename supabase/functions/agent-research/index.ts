@@ -6,80 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const RESEARCH_TOPICS: Record<string, string[]> = {
-  orchestration: [
-    "multi-agent coordination patterns",
-    "task routing optimization",
-    "workflow automation best practices",
-    "project management AI techniques",
-  ],
-  architecture: [
-    "modern system architecture patterns",
-    "database optimization strategies",
-    "API design best practices",
-    "scalable infrastructure patterns",
-  ],
-  "ui/ux": [
-    "modern UI component patterns",
-    "design system best practices",
-    "accessibility improvements",
-    "user experience optimization",
-  ],
-  frontend: [
-    "React performance optimization",
-    "frontend architecture patterns",
-    "modern CSS techniques",
-    "state management approaches",
-  ],
-  research: [
-    "data analysis methodologies",
-    "AI research patterns",
-    "analytical framework improvements",
-    "insight extraction techniques",
-  ],
-  intelligence: [
-    "data analysis methodologies",
-    "AI research patterns",
-    "analytical framework improvements",
-    "insight extraction techniques",
-  ],
-  security: [
-    "web security best practices",
-    "authentication patterns",
-    "vulnerability prevention",
-    "secure coding guidelines",
-  ],
-  review: [
-    "code review best practices",
-    "automated testing strategies",
-    "quality assurance methodologies",
-    "bug detection patterns",
-  ],
-  qa: [
-    "testing automation frameworks",
-    "quality metrics and monitoring",
-    "regression testing approaches",
-    "end-to-end testing patterns",
-  ],
-  backend: [
-    "API optimization patterns",
-    "database query optimization",
-    "serverless architecture patterns",
-    "backend security practices",
-  ],
-  devops: [
-    "CI/CD pipeline optimization",
-    "infrastructure as code patterns",
-    "monitoring and alerting best practices",
-    "deployment strategy improvements",
-  ],
-};
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { agent_id } = await req.json();
+    const body = await req.json();
+    const { agent_id, topic, task_id, use_exa } = body;
     if (!agent_id) throw new Error("agent_id required");
 
     const supabase = createClient(
@@ -89,165 +21,206 @@ serve(async (req) => {
 
     // Load agent
     const { data: agent } = await supabase
-      .from('agents')
-      .select('*')
-      .eq('id', agent_id)
-      .single();
-
+      .from('agents').select('*').eq('id', agent_id).single();
     if (!agent) throw new Error("Agent not found");
 
-    // Check rate limit: max 3 researches per agent per day
+    // Rate limit: max 5 per agent per day
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: recentResearch } = await supabase
-      .from('agent_research_log')
-      .select('id')
-      .eq('agent_id', agent_id)
-      .gte('researched_at', oneDayAgo);
-
-    if (recentResearch && recentResearch.length >= 3) {
-      return new Response(JSON.stringify({ 
-        ok: true, 
-        message: "Research limit reached for today (guardrail)" 
-      }), {
+      .from('agent_research_log').select('id')
+      .eq('agent_id', agent_id).gte('researched_at', oneDayAgo);
+    if (recentResearch && recentResearch.length >= 5) {
+      return new Response(JSON.stringify({ ok: true, message: "Research limit reached" }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Load existing memory to inform research direction
-    const { data: existingMemory } = await supabase
-      .from('agent_memory')
-      .select('content, memory_type, confidence')
-      .eq('agent_id', agent_id)
-      .order('created_at', { ascending: false })
-      .limit(10);
+    const searchTopic = topic || `${agent.department} best practices`;
+    const EXA_API_KEY = Deno.env.get('EXA_API_KEY');
 
-    const dept = agent.department.toLowerCase();
-    const topics = RESEARCH_TOPICS[dept] || RESEARCH_TOPICS["backend"];
-    const topic = topics[Math.floor(Math.random() * topics.length)];
+    let findings = '';
+    let sourceUrl: string | null = null;
+    let relevanceScore = 0.5;
+    let searchMethod = 'fallback';
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      // Fallback: store a generic research entry
-      await supabase.from('agent_research_log').insert({
+    // ===== REAL SEARCH via Exa API =====
+    if (EXA_API_KEY) {
+      try {
+        const exaResponse = await fetch('https://api.exa.ai/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': EXA_API_KEY,
+          },
+          body: JSON.stringify({
+            query: searchTopic,
+            numResults: 5,
+            useAutoprompt: true,
+            type: 'auto',
+            contents: {
+              text: { maxCharacters: 1000 },
+              highlights: { numSentences: 3 },
+            },
+          }),
+        });
+
+        if (exaResponse.ok) {
+          const exaData = await exaResponse.json();
+          const results = exaData.results || [];
+          searchMethod = 'exa';
+
+          if (results.length > 0) {
+            // Build structured findings from real search results
+            const sourceSummaries = results.slice(0, 3).map((r: any, i: number) => {
+              const highlights = r.highlights?.join(' ') || r.text?.slice(0, 300) || 'No content';
+              return `**Source ${i + 1}**: [${r.title || 'Untitled'}](${r.url})\n${highlights}`;
+            });
+
+            sourceUrl = results[0]?.url || null;
+            findings = [
+              `## Research: ${searchTopic}`,
+              `\n### Sources Found: ${results.length}`,
+              ...sourceSummaries,
+              `\n### Key Takeaways`,
+            ].join('\n');
+
+            // Use AI to synthesize findings if available
+            const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+            if (LOVABLE_API_KEY) {
+              try {
+                const rawContent = results.map((r: any) =>
+                  `Title: ${r.title}\nURL: ${r.url}\nContent: ${(r.text || r.highlights?.join(' ') || '').slice(0, 500)}`
+                ).join('\n---\n');
+
+                const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    model: "google/gemini-2.5-flash-lite",
+                    messages: [
+                      { role: "system", content: "Synthesize search results into actionable findings. Be specific and practical. Include concrete recommendations." },
+                      { role: "user", content: `Topic: ${searchTopic}\n\nSearch results:\n${rawContent}\n\nProvide 3-5 specific, actionable findings with concrete recommendations.` },
+                    ],
+                  }),
+                });
+
+                if (aiRes.ok) {
+                  const aiData = await aiRes.json();
+                  const synthesis = aiData.choices?.[0]?.message?.content;
+                  if (synthesis) {
+                    findings += `\n${synthesis}`;
+                  }
+                } else {
+                  await aiRes.text();
+                }
+              } catch { /* AI synthesis is best-effort */ }
+            }
+
+            // Calculate real relevance based on result quality
+            const avgScore = results.reduce((s: number, r: any) => s + (r.score || 0.5), 0) / results.length;
+            relevanceScore = Math.min(1, avgScore * 0.8 + 0.2);
+          }
+        } else {
+          const errText = await exaResponse.text();
+          console.error("Exa API error:", exaResponse.status, errText);
+        }
+      } catch (e) {
+        console.error("Exa search failed:", e);
+      }
+    }
+
+    // ===== Fallback: AI-only research (clearly labeled) =====
+    if (searchMethod === 'fallback') {
+      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+      if (LOVABLE_API_KEY) {
+        try {
+          const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash-lite",
+              messages: [
+                { role: "system", content: "You are a research assistant. Provide specific, actionable findings. Clearly state these are from your training data, not live search." },
+                { role: "user", content: `Research topic: "${searchTopic}" for a ${agent.role} agent in ${agent.department}. Provide 3 specific, actionable findings.` },
+              ],
+            }),
+          });
+          if (aiRes.ok) {
+            const aiData = await aiRes.json();
+            findings = `## Research: ${searchTopic}\n\n⚠️ *Based on AI knowledge, not live search (Exa API not available)*\n\n${aiData.choices?.[0]?.message?.content || 'No findings'}`;
+            relevanceScore = 0.4; // Lower score for non-grounded research
+            searchMethod = 'ai_only';
+          } else {
+            await aiRes.text();
+          }
+        } catch { /* fallback */ }
+      }
+
+      if (!findings) {
+        findings = `Attempted research on "${searchTopic}" — external search unavailable.`;
+        relevanceScore = 0.2;
+      }
+    }
+
+    // Store research
+    await supabase.from('agent_research_log').insert({
+      agent_id,
+      topic: searchTopic,
+      findings,
+      relevance_score: relevanceScore,
+      source_url: sourceUrl,
+      applied: false,
+    });
+
+    // Store as memory if high relevance
+    if (relevanceScore >= 0.5) {
+      await supabase.from('agent_memory').insert({
         agent_id,
-        topic,
-        findings: `Studied ${topic} to improve ${agent.department} capabilities.`,
-        relevance_score: 0.5,
-        applied: false,
-      });
-
-      return new Response(JSON.stringify({ ok: true, topic, ai: false }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        memory_type: 'insight',
+        content: findings.slice(0, 500),
+        confidence: relevanceScore,
+        source_task_id: task_id || null,
+        tags: ['research', searchMethod, agent.department.toLowerCase()],
       });
     }
 
-    // Use AI to generate meaningful research insights
-    const memoryContext = (existingMemory || [])
-      .map(m => `[${m.memory_type}] ${m.content}`)
-      .join('\n');
-
-    const prompt = `You are ${agent.name}, an AI agent specializing in ${agent.role} (${agent.department} department).
-
-Your existing knowledge:
-${memoryContext || "No prior learnings yet."}
-
-Research topic: "${topic}"
-
-Based on your role and existing knowledge, generate a specific, actionable research finding about this topic. The finding should:
-1. Be directly applicable to your role
-2. Not repeat what you already know
-3. Include a concrete technique, pattern, or approach
-4. Be specific enough to improve your future task performance
-
-Provide the finding as a concise paragraph (2-3 sentences max).`;
-
+    // Create inbox notification for research completion
     try {
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+      const BASE = Deno.env.get('SUPABASE_URL')!;
+      const KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      await fetch(`${BASE}/functions/v1/notify-event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEY}` },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: "You are a focused AI researcher. Provide specific, actionable insights. Be concise." },
-            { role: "user", content: prompt },
-          ],
+          event_type: 'research_suggestion',
+          payload: {
+            agent_id,
+            agent_name: agent.name,
+            topic: searchTopic,
+            findings: findings.slice(0, 300),
+            source_url: sourceUrl,
+          },
         }),
       });
+    } catch { /* best effort */ }
 
-      if (!aiResponse.ok) {
-        const errText = await aiResponse.text();
-        console.error("AI research failed:", aiResponse.status, errText);
-        
-        if (aiResponse.status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limited. Try again later." }), {
-            status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        if (aiResponse.status === 402) {
-          return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-            status: 402,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        throw new Error("AI research request failed");
-      }
-
-      const aiData = await aiResponse.json();
-      const findings = aiData.choices?.[0]?.message?.content || "";
-
-      // Score relevance based on keyword overlap with agent's domain
-      const deptKeywords = (RESEARCH_TOPICS[dept] || []).join(' ').toLowerCase().split(/\s+/);
-      const findingWords = findings.toLowerCase().split(/\s+/);
-      const overlap = deptKeywords.filter(w => findingWords.includes(w)).length;
-      const relevanceScore = Math.min(1, 0.4 + (overlap / Math.max(1, deptKeywords.length)) * 0.6);
-
-      // Store research
-      await supabase.from('agent_research_log').insert({
-        agent_id,
-        topic,
-        findings,
-        relevance_score: relevanceScore,
-        applied: false,
-      });
-
-      // If high relevance, also store as agent memory insight
-      if (relevanceScore >= 0.6) {
-        await supabase.from('agent_memory').insert({
-          agent_id,
-          memory_type: 'insight',
-          content: findings,
-          confidence: relevanceScore,
-          tags: ['self-research', dept, topic.split(' ')[0]],
-        });
-      }
-
-      return new Response(JSON.stringify({ 
-        ok: true, 
-        topic, 
-        relevance_score: relevanceScore,
-        applied_to_memory: relevanceScore >= 0.6,
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } catch (aiErr) {
-      console.error("AI research error:", aiErr);
-      
-      await supabase.from('agent_research_log').insert({
-        agent_id,
-        topic,
-        findings: `Attempted research on "${topic}" — AI unavailable, queued for retry.`,
-        relevance_score: 0.3,
-        applied: false,
-      });
-
-      return new Response(JSON.stringify({ ok: true, topic, ai: false }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    return new Response(JSON.stringify({
+      ok: true,
+      topic: searchTopic,
+      search_method: searchMethod,
+      relevance_score: relevanceScore,
+      source_url: sourceUrl,
+      findings_length: findings.length,
+      applied_to_memory: relevanceScore >= 0.5,
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
