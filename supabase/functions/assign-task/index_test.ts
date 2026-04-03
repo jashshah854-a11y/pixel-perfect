@@ -553,6 +553,22 @@ Deno.test("S10.3: Duplicate task submission — detection and classification", a
 Deno.test("S11.1: Performance benchmarks — assignment, decomposition, learning", async () => {
   const benchmarks: { metric: string; ms: number }[] = [];
 
+  // Warmup: prime cold-start for all three functions
+  const warmupTask = await dbInsert("tasks", { title: "warmup-task", priority: "low", source: "manual" });
+  const wt = Array.isArray(warmupTask) ? warmupTask[0] : warmupTask;
+  await invokeFunction("assign-task", { task_id: wt.id });
+  const warmupPlan = await dbInsert("plans", { title: "warmup-plan", markdown_content: "- step", status: "draft" });
+  const wp = Array.isArray(warmupPlan) ? warmupPlan[0] : warmupPlan;
+  await invokeFunction("decompose-plan", { plan_id: wp.id });
+  await dbPatch("tasks", `id=eq.${wt.id}`, { status: "done", completed_at: new Date().toISOString() });
+  await invokeFunction("agent-learn", { task_id: wt.id });
+  // Cleanup warmup artifacts
+  await cleanupTask(wt.id);
+  const wpSubs = await dbQuery("tasks", { source: "eq.plan", title: "like.*warmup*" });
+  for (const s of (wpSubs || [])) await cleanupTask(s.id);
+  await dbDelete("inbox", `message=like.*warmup*`);
+  await dbDelete("plans", `id=eq.${wp.id}`);
+
   // 1. Assignment Latency
   const rows = await dbInsert("tasks", {
     title: "Perf bench: design system tokens",
@@ -587,15 +603,14 @@ Deno.test("S11.1: Performance benchmarks — assignment, decomposition, learning
   // Print benchmarks
   console.log("\n═══ PERFORMANCE BENCHMARKS ═══");
   for (const b of benchmarks) {
-    const indicator = b.ms < 3000 ? "✅" : b.ms < 8000 ? "⚠️" : "❌";
+    const indicator = b.ms < 3000 ? "✅" : b.ms < 5000 ? "⚠️" : "❌";
     console.log(`${indicator} ${b.metric}: ${b.ms}ms`);
   }
   console.log("══════════════════════════════\n");
 
-  // Assert optimized bounds (5s target for decomposition and learning)
+  // Assert: all operations under 5s post-warmup
   for (const b of benchmarks) {
-    const limit = b.metric === "Assignment Latency" ? 5000 : 8000;
-    assert(b.ms < limit, `${b.metric} too slow: ${b.ms}ms (max ${limit}ms)`);
+    assert(b.ms < 5000, `${b.metric} too slow: ${b.ms}ms (max 5000ms)`);
   }
 
   // Cleanup
