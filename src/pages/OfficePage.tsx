@@ -8,6 +8,8 @@ import { KnowledgeLog } from "@/components/KnowledgeLog";
 import { OfficeOverview } from "@/components/OfficeOverview";
 import { SystemHealthPanel } from "@/components/SystemHealthPanel";
 import { ExecutiveSummary } from "@/components/ExecutiveSummary";
+import { TaskPipelineView } from "@/components/TaskPipelineView";
+import { QuickAgentAssign } from "@/components/QuickAgentAssign";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
