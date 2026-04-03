@@ -3,12 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PlanPreview } from "@/components/PlanPreview";
+import { OrchestrationFlowView } from "@/components/OrchestrationFlowView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { Plus, ChevronDown, ChevronUp, Bot, Trash2 } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, Bot, Trash2, GitBranch } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,43 @@ import { format } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
+interface OrchestrationResult {
+  subtasks: Array<{
+    task_id: string;
+    title: string;
+    owner: string | null;
+    owner_name: string | null;
+    type: string;
+    priority?: string;
+    delegatedTo?: string | null;
+    assignments: Array<{ agent_id: string; role: string; fit_score?: number }>;
+  }>;
+  orchestration: {
+    primaryAgents: string[];
+    subAgentSpawns: Array<{
+      parentName: string;
+      subAgentName: string;
+      reason: string;
+      delegatedTasks: string[];
+    }>;
+    escalations: Array<{
+      agentName: string;
+      reason: string;
+      action: string;
+    }>;
+    researchTriggers: Array<{
+      agentName: string;
+      topic: string;
+    }>;
+    totalTasks: number;
+    delegationChains: Array<{
+      task: string;
+      from: string;
+      to: string;
+    }>;
+  };
+}
+
 export default function PlansPage() {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
@@ -31,6 +69,8 @@ export default function PlansPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [orchestrationResult, setOrchestrationResult] = useState<OrchestrationResult | null>(null);
+  const [orchestratingPlanTitle, setOrchestratingPlanTitle] = useState("");
 
   const { data: plans, isLoading } = useQuery({
     queryKey: ["plans"],
@@ -62,16 +102,37 @@ export default function PlansPage() {
     mutationFn: async () => {
       const { data, error } = await supabase.from("plans").insert({ title, markdown_content: content }).select("id").single();
       if (error) throw error;
+      
+      setOrchestratingPlanTitle(title);
+      
       try {
         const { data: result } = await supabase.functions.invoke("decompose-plan", { body: { plan_id: data.id } });
-        if (result?.subtasks?.length > 0) {
+        
+        if (result?.orchestration) {
+          setOrchestrationResult(result as OrchestrationResult);
+          toast.success(`Plan decomposed: ${result.orchestration.totalTasks} tasks, ${result.orchestration.primaryAgents.length} agents`);
+        } else if (result?.subtasks?.length > 0) {
+          // Fallback for old response format
+          setOrchestrationResult({
+            subtasks: result.subtasks,
+            orchestration: {
+              primaryAgents: [...new Set(result.subtasks.map((s: any) => s.owner_name).filter(Boolean))] as string[],
+              subAgentSpawns: [],
+              escalations: [],
+              researchTriggers: [],
+              totalTasks: result.subtasks.length,
+              delegationChains: [],
+            },
+          });
           toast.success(`Omega decomposed plan into ${result.subtasks.length} subtasks`);
-          for (const sub of result.subtasks) {
-            if (sub.owner) {
-              window.dispatchEvent(new CustomEvent("agent-claim", {
-                detail: { agentId: sub.owner, taskTitle: sub.title }
-              }));
-            }
+        }
+
+        // Dispatch agent-claim events
+        for (const sub of (result?.subtasks || [])) {
+          if (sub.owner) {
+            window.dispatchEvent(new CustomEvent("agent-claim", {
+              detail: { agentId: sub.owner, taskTitle: sub.title }
+            }));
           }
         }
       } catch {
@@ -82,6 +143,8 @@ export default function PlansPage() {
       queryClient.invalidateQueries({ queryKey: ["plans"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["inbox-all"] });
+      queryClient.invalidateQueries({ queryKey: ["inbox-unread"] });
       setTitle("");
       setContent("");
       setFormOpen(false);
@@ -110,7 +173,6 @@ export default function PlansPage() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    // Show preview instead of immediate submission
     setShowPreview(true);
   };
 
@@ -143,11 +205,35 @@ export default function PlansPage() {
                 </AlertDialogContent>
               </AlertDialog>
             )}
-            <Button size="sm" onClick={() => setFormOpen(true)}>
+            <Button size="sm" onClick={() => { setFormOpen(true); setOrchestrationResult(null); }}>
               <Plus className="h-4 w-4 mr-1" /> New Plan
             </Button>
           </div>
         </div>
+
+        {/* Live Orchestration View */}
+        {orchestrationResult && (
+          <div className="rounded-lg border border-primary/20 bg-card p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <GitBranch className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Live Orchestration</h3>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs h-6"
+                onClick={() => setOrchestrationResult(null)}
+              >
+                Close
+              </Button>
+            </div>
+            <OrchestrationFlowView
+              planTitle={orchestratingPlanTitle}
+              result={orchestrationResult}
+            />
+          </div>
+        )}
 
         {isLoading ? (
           <div className="space-y-3">
@@ -158,7 +244,7 @@ export default function PlansPage() {
             {plans.map((plan) => (
               <div key={plan.id} className="rounded-lg border bg-card">
                 <div
-                  className="flex items-center justify-between p-4 cursor-pointer"
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-accent/20 transition-colors"
                   onClick={() => setExpandedId(expandedId === plan.id ? null : plan.id)}
                 >
                   <div className="flex items-center gap-3">
@@ -166,7 +252,7 @@ export default function PlansPage() {
                     <StatusBadge value={plan.status} />
                     {plan.status === "executing" && (
                       <span className="flex items-center gap-1 text-[10px] text-primary">
-                        <Bot className="h-3 w-3" /> Sent to Omega
+                        <Bot className="h-3 w-3 animate-pulse" /> Orchestrating
                       </span>
                     )}
                   </div>
@@ -176,7 +262,7 @@ export default function PlansPage() {
                   </div>
                 </div>
                 {expandedId === plan.id && (
-                  <div className="border-t p-4 space-y-3">
+                  <div className="border-t p-4 space-y-3 animate-fade-in">
                     <select
                       value={plan.status}
                       onChange={(e) => updateStatus.mutate({ id: plan.id, status: e.target.value })}
@@ -201,7 +287,7 @@ export default function PlansPage() {
       </div>
 
       <Sheet open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setShowPreview(false); }}>
-        <SheetContent className="bg-card border-border">
+        <SheetContent className="bg-card border-border sm:max-w-lg">
           <SheetHeader>
             <SheetTitle>New Plan</SheetTitle>
           </SheetHeader>
