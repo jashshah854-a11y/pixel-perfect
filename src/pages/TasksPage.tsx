@@ -152,9 +152,31 @@ export default function TasksPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Tasks</h2>
-          <Button size="sm" onClick={() => setFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> New Task
-          </Button>
+          <div className="flex items-center gap-2">
+            {(tasks?.length || 0) > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={async () => {
+                  const { error } = await supabase.from("tasks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+                  if (!error) {
+                    queryClient.invalidateQueries({ queryKey: ["tasks"] });
+                    queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
+                    queryClient.invalidateQueries({ queryKey: ["agents"] });
+                    toast.success("All tasks cleared");
+                  } else {
+                    toast.error("Failed to clear tasks");
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1" /> Clear All
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> New Task
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
