@@ -257,7 +257,9 @@ export default function PlansPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">{format(new Date(plan.created_at), "MMM d, yyyy")}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {isNaN(new Date(plan.created_at).getTime()) ? "—" : format(new Date(plan.created_at), "MMM d, yyyy")}
+                    </span>
                     {expandedId === plan.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </div>
                 </div>
