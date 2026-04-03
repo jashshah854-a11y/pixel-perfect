@@ -33,9 +33,19 @@ interface InboxMessageProps {
     metadata: Record<string, any> | null;
     feedback: string | null;
     created_at: string;
+  } | {
+    id: string;
+    from_agent: string | null;
+    to_agent: string | null;
+    message: string;
+    type: string;
+    read: boolean;
+    status: string;
+    metadata: any;
+    feedback: string | null;
+    created_at: string;
   };
   agentName?: string;
-  agents?: Array<{ id: string; name: string; department: string; role: string }>;
 }
 
 const STATUS_ICONS: Record<string, typeof CheckCircle> = {
