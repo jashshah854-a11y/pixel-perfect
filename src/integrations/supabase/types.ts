@@ -218,28 +218,37 @@ export type Database = {
       inbox: {
         Row: {
           created_at: string
+          feedback: string | null
           from_agent: string | null
           id: string
           message: string
+          metadata: Json | null
           read: boolean
+          status: string
           to_agent: string | null
           type: string
         }
         Insert: {
           created_at?: string
+          feedback?: string | null
           from_agent?: string | null
           id?: string
           message: string
+          metadata?: Json | null
           read?: boolean
+          status?: string
           to_agent?: string | null
           type?: string
         }
         Update: {
           created_at?: string
+          feedback?: string | null
           from_agent?: string | null
           id?: string
           message?: string
+          metadata?: Json | null
           read?: boolean
+          status?: string
           to_agent?: string | null
           type?: string
         }
