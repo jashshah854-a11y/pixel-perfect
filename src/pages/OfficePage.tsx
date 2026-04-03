@@ -8,6 +8,8 @@ import { KnowledgeLog } from "@/components/KnowledgeLog";
 import { OfficeOverview } from "@/components/OfficeOverview";
 import { SystemHealthPanel } from "@/components/SystemHealthPanel";
 import { ExecutiveSummary } from "@/components/ExecutiveSummary";
+import { TaskPipelineView } from "@/components/TaskPipelineView";
+import { QuickAgentAssign } from "@/components/QuickAgentAssign";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useCallback, useState } from "react";
@@ -206,12 +208,18 @@ export default function OfficePage() {
             </div>
           ) : null}
 
-          {/* Bottom panel: Overview + Chat */}
+          {/* Bottom panel: Pipeline + Overview + Chat + Assign */}
           {agents && (
-            <div className="shrink-0 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
-              <OfficeOverview />
-              <div className="md:w-72">
-                <OfficeChat agents={agents} />
+            <div className="shrink-0 space-y-2">
+              <TaskPipelineView />
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-2">
+                <OfficeOverview />
+                <div className="md:w-56">
+                  <QuickAgentAssign />
+                </div>
+                <div className="md:w-72">
+                  <OfficeChat agents={agents} />
+                </div>
               </div>
             </div>
           )}

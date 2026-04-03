@@ -32,7 +32,19 @@ interface CollabLine {
   toAgentId: string;
   taskTitle: string;
   alpha: number;
+  collabType: string;
+  createdAt: number; // timestamp ms
 }
+
+const COLLAB_COLORS: Record<string, number> = {
+  handoff: 0x3b82f6,
+  request_help: 0xf59e0b,
+  share_finding: 0x10b981,
+  review: 0xa855f7,
+};
+
+// Auto-expire after 5 minutes
+const COLLAB_TTL_MS = 5 * 60 * 1000;
 
 let collabLines: CollabLine[] = [];
 let collabGraphics: Graphics | null = null;
@@ -41,7 +53,8 @@ export function setCollabGraphics(g: Graphics) {
   collabGraphics = g;
 }
 
-export function updateCollaborations(collabs: Array<{ from_agent: string; to_agent: string; status: string; message: string }>) {
+export function updateCollaborations(collabs: Array<{ from_agent: string; to_agent: string; status: string; message: string; collab_type?: string; created_at?: string }>) {
+  const now = Date.now();
   collabLines = collabs
     .filter(c => c.status === "pending" || c.status === "in_progress")
     .map(c => ({
@@ -49,7 +62,10 @@ export function updateCollaborations(collabs: Array<{ from_agent: string; to_age
       toAgentId: c.to_agent,
       taskTitle: c.message,
       alpha: 0.5,
-    }));
+      collabType: c.collab_type || "share_finding",
+      createdAt: c.created_at ? new Date(c.created_at).getTime() : now,
+    }))
+    .filter(c => now - c.createdAt < COLLAB_TTL_MS); // auto-expire old ones
 }
 
 // === Claim notification system ===
@@ -576,8 +592,14 @@ function updateWallClocks() {
 
 // === Collaboration graph rendering ===
 function renderCollabGraph(agentSprites: AgentSprite[]) {
-  if (!collabGraphics || collabLines.length === 0) {
-    if (collabGraphics) collabGraphics.clear();
+  if (!collabGraphics) return;
+  
+  // Auto-expire old lines
+  const now = Date.now();
+  collabLines = collabLines.filter(c => now - c.createdAt < COLLAB_TTL_MS);
+  
+  if (collabLines.length === 0) {
+    collabGraphics.clear();
     return;
   }
 
@@ -588,10 +610,15 @@ function renderCollabGraph(agentSprites: AgentSprite[]) {
     const toSprite = agentSprites.find(s => s.agent.id === line.toAgentId);
     if (!fromSprite || !toSprite) continue;
 
+    // Only show if at least one agent is working
+    if (fromSprite.agent.status !== "working" && toSprite.agent.status !== "working") continue;
+
     const fromX = fromSprite.baseX;
     const fromY = fromSprite.baseY;
     const toX = toSprite.baseX;
     const toY = toSprite.baseY;
+
+    const lineColor = COLLAB_COLORS[line.collabType] || 0x3b82f6;
 
     // Animated pulse along the line
     const pulse = Math.sin(tick * 0.04) * 0.15;
@@ -606,11 +633,10 @@ function renderCollabGraph(agentSprites: AgentSprite[]) {
     for (let i = 0; i < segments; i++) {
       const t1 = i / segments;
       const t2 = (i + 0.5) / segments;
-      // Animate dash flow
       const offset = (tick * 0.01) % 1;
       const at1 = (t1 + offset) % 1;
       const at2 = (t2 + offset) % 1;
-      if (at2 < at1) continue; // skip wrap-around segment
+      if (at2 < at1) continue;
 
       const x1 = fromX + dx * at1;
       const y1 = fromY + dy * at1;
@@ -619,14 +645,14 @@ function renderCollabGraph(agentSprites: AgentSprite[]) {
 
       collabGraphics.moveTo(x1, y1);
       collabGraphics.lineTo(x2, y2);
-      collabGraphics.stroke({ width: 1.2, color: 0x3b82f6, alpha: alpha * 0.6 });
+      collabGraphics.stroke({ width: 1.2, color: lineColor, alpha: alpha * 0.6 });
     }
 
     // Glow dots at endpoints
     collabGraphics.circle(fromX, fromY - 5, 2.5);
-    collabGraphics.fill({ color: 0x3b82f6, alpha: alpha * 0.4 });
+    collabGraphics.fill({ color: lineColor, alpha: alpha * 0.4 });
     collabGraphics.circle(toX, toY - 5, 2.5);
-    collabGraphics.fill({ color: 0x3b82f6, alpha: alpha * 0.4 });
+    collabGraphics.fill({ color: lineColor, alpha: alpha * 0.4 });
   }
 }
 
