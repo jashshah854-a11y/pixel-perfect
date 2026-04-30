@@ -206,7 +206,10 @@ export default function JobsPage() {
             </table>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No sweep results yet.</p>
+          <EmptyState
+            title="No sweep results yet"
+            description="Run a Ghost Sweep to scan for stealth opportunities and ghost-job signals."
+          />
         )}
 
         {/* Sweep History */}
