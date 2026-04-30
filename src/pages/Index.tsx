@@ -116,7 +116,7 @@ export default function Dashboard() {
               onClick={refreshStats}
               disabled={loadingStats}
             >
-              <RefreshCw className={`h-3 w-3 mr-1.5 ${loadingStats ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 mr-1 ${loadingStats ? "animate-spin" : ""}`} />
               Refresh
             </Button>
           }
