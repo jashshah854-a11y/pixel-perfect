@@ -198,7 +198,10 @@ export default function IntegrationsPage() {
         )}
 
         {!isLoading && sortedCategories.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8">No integrations configured.</p>
+          <EmptyState
+            title="No integrations configured"
+            description="Connect a tool or API to expand the agent stack."
+          />
         )}
       </div>
     </Layout>
