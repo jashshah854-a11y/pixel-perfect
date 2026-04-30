@@ -11,6 +11,7 @@ import { RefreshCw, Plug, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader, SectionLabel } from "@/components/PageHeader";
+import { EmptyState } from "@/components/ListState";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
