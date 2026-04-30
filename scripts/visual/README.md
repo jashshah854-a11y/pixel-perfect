@@ -16,6 +16,11 @@ regressions immediately.
 Routes covered: `/`, `/tasks`, `/agents`, `/plans`, `/jobs`, `/inbox`,
 `/analytics`, `/deliverables`, `/integrations`.
 
+Each route is captured at three viewports: **tablet 768×1024**, **laptop
+1366×768**, **wide 1920×1080**. Mobile (<640px) is excluded by policy — see
+`mem://constraints/viewport-support`. Baselines and diffs are filenamed
+`<viewport>__<route>.png`.
+
 ## One-time setup
 
 ```bash
