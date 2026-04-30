@@ -19,15 +19,14 @@ interface PageHeaderProps {
  */
 function hasRenderableActions(actions: ReactNode): boolean {
   if (actions === null || actions === undefined || actions === false) return false;
-  const arr = Children.toArray(actions).filter(
-    (c) => c !== null && c !== undefined && c !== false && c !== "",
-  );
+  // Children.toArray already drops null / undefined / false / "" entries.
+  const arr = Children.toArray(actions);
   if (arr.length === 0) return false;
-  // Unwrap fragments — if every child is a fragment with no renderable
-  // children of its own, treat as empty.
+  const FRAGMENT = (<></>).type;
+  // If every entry is an empty fragment, treat the whole thing as empty.
   return arr.some((c) => {
     if (!isValidElement(c)) return true;
-    if (c.type !== ((<></>) as any).type) return true;
+    if (c.type !== FRAGMENT) return true;
     return hasRenderableActions((c.props as { children?: ReactNode }).children);
   });
 }
