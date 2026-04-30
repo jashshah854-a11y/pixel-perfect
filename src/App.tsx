@@ -15,6 +15,7 @@ import AnalyticsPage from "./pages/AnalyticsPage.tsx";
 import ClientViewPage from "./pages/ClientViewPage.tsx";
 import DeliverablesPage from "./pages/DeliverablesPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import DevPageHeader from "./pages/DevPageHeader.tsx";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/deliverables" element={<DeliverablesPage />} />
           <Route path="/office" element={<OfficePage />} />
+          <Route path="/dev/page-header" element={<DevPageHeader />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
