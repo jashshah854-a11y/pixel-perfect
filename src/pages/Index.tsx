@@ -104,17 +104,22 @@ export default function Dashboard() {
   return (
     <Layout totalTokens={totalTokens} unreadCount={unreadCount}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Dashboard</h2>
-          <button
-            onClick={refreshStats}
-            disabled={loadingStats}
-            className="flex items-center gap-1.5 text-xs rounded-md border px-2.5 py-1.5 hover:bg-muted/50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3 w-3 ${loadingStats ? "animate-spin" : ""}`} />
-            Refresh Stats
-          </button>
-        </div>
+        <PageHeader
+          eyebrow="Command · Live"
+          title="Dashboard"
+          description="Real-time view of agents, pipeline, and signal flow."
+          actions={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={refreshStats}
+              disabled={loadingStats}
+            >
+              <RefreshCw className={`h-3 w-3 mr-1.5 ${loadingStats ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          }
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
