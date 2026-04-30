@@ -149,15 +149,20 @@ export default function TasksPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Tasks</h2>
+      <div className="space-y-5 p-1">
+        <header className="flex items-end justify-between gap-4 pt-2">
+          <div className="space-y-0.5">
+            <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground/70">
+              Workflow · Kanban
+            </p>
+            <h1 className="text-display text-3xl font-semibold leading-none">Tasks</h1>
+          </div>
           <div className="flex items-center gap-2">
             {(tasks?.length || 0) > 0 && (
               <Button
                 size="sm"
                 variant="outline"
-                className="text-destructive hover:text-destructive"
+                className="text-destructive hover:text-destructive border-destructive/20 hover:border-destructive/40 hover:bg-destructive/5"
                 onClick={async () => {
                   const { error } = await supabase.from("tasks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
                   if (!error) {
@@ -177,15 +182,25 @@ export default function TasksPage() {
               <Plus className="h-4 w-4 mr-1" /> New Task
             </Button>
           </div>
-        </div>
+        </header>
+
+        <div className="hairline" />
 
         {/* Filters */}
         <div className="flex gap-2 flex-wrap">
-          <select value={filterAgent} onChange={(e) => setFilterAgent(e.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm">
+          <select
+            value={filterAgent}
+            onChange={(e) => setFilterAgent(e.target.value)}
+            className="rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm px-3 py-1.5 text-[12px] text-foreground hover:border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-ring/60 transition-colors"
+          >
             <option value="">All Agents</option>
             {agents?.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
-          <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm">
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm px-3 py-1.5 text-[12px] text-foreground hover:border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-ring/60 transition-colors"
+          >
             <option value="">All Priorities</option>
             <option value="low">Low</option>
             <option value="medium">Medium</option>
@@ -201,34 +216,38 @@ export default function TasksPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             {columns.map((col) => {
               const colTasks = filtered?.filter((t) => t.status === col.key) || [];
               const isOver = dropTarget === col.key;
               return (
                 <div
                   key={col.key}
-                  className={`space-y-2 rounded-lg p-2 transition-all duration-200 ${
+                  className={`space-y-2 rounded-xl p-2.5 transition-all duration-300 ${
                     isOver
-                      ? "bg-primary/10 ring-2 ring-primary/40 ring-inset"
+                      ? "bg-primary/[0.06] ring-1 ring-primary/30 ring-inset"
                       : dragTaskId
-                        ? "bg-muted/30 ring-1 ring-border/50 ring-inset"
+                        ? "bg-white/[0.015] ring-1 ring-white/[0.06] ring-inset"
                         : ""
                   }`}
                   onDragOver={(e) => handleDragOver(e, col.key)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, col.key)}
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-sm font-medium text-muted-foreground">{col.label}</h3>
-                    <span className="text-xs font-mono text-muted-foreground">{colTasks.length}</span>
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <h3 className="text-[10px] uppercase tracking-[0.18em] font-medium text-muted-foreground">
+                      {col.label}
+                    </h3>
+                    <span className="text-[11px] text-mono tabular-nums text-muted-foreground/70">
+                      {colTasks.length}
+                    </span>
                   </div>
                   {colTasks.length === 0 ? (
-                    <p className={`text-xs text-muted-foreground p-3 border border-dashed rounded-lg text-center transition-colors ${
-                      isOver ? "border-primary/40 text-primary" : ""
+                    <div className={`empty-state !p-4 text-[11px] transition-colors ${
+                      isOver ? "border-primary/40 text-primary" : "text-muted-foreground/60"
                     }`}>
                       {isOver ? "Drop here" : "No tasks"}
-                    </p>
+                    </div>
                   ) : (
                     colTasks.map((task) => (
                       <div key={task.id}>
