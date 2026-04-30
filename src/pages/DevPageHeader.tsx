@@ -120,6 +120,16 @@ const cases: Array<{
       actions: <Button size="sm" variant="ghost"><Settings /></Button>,
     },
   },
+  {
+    id: "empty-fragment-actions",
+    note: "Actions = empty fragment — must render IDENTICAL to no-actions case (no phantom gap).",
+    props: {
+      eyebrow: "EDGE",
+      title: "Empty Actions",
+      description: "Hardened guard should suppress the wrapper div entirely.",
+      actions: <>{false && <Button size="sm">Hidden</Button>}</>,
+    },
+  },
 ];
 
 export default function DevPageHeader() {

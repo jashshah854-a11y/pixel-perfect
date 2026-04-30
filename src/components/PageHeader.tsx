@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import { Children, ReactNode, isValidElement } from "react";
 
 interface PageHeaderProps {
   /** Small uppercase eyebrow above the title (mono, tracked-out). */
@@ -10,6 +10,25 @@ interface PageHeaderProps {
   description?: ReactNode;
   /** Right-side actions (buttons, filters). */
   actions?: ReactNode;
+}
+
+/**
+ * Returns true only if `actions` will produce visible output.
+ * Guards against empty fragments / all-falsy children that would
+ * otherwise render an empty <div> and steal `gap-4` horizontal space.
+ */
+function hasRenderableActions(actions: ReactNode): boolean {
+  if (actions === null || actions === undefined || actions === false) return false;
+  // Children.toArray already drops null / undefined / false / "" entries.
+  const arr = Children.toArray(actions);
+  if (arr.length === 0) return false;
+  const FRAGMENT = (<></>).type;
+  // If every entry is an empty fragment, treat the whole thing as empty.
+  return arr.some((c) => {
+    if (!isValidElement(c)) return true;
+    if (c.type !== FRAGMENT) return true;
+    return hasRenderableActions((c.props as { children?: ReactNode }).children);
+  });
 }
 
 /**
@@ -39,7 +58,7 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
             </p>
           )}
         </div>
-        {actions && (
+        {hasRenderableActions(actions) && (
           <div className="flex items-center gap-2 shrink-0">
             {actions}
           </div>
