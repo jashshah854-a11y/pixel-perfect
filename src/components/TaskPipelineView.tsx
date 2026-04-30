@@ -105,29 +105,47 @@ export function TaskPipelineView() {
   ];
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-medium text-muted-foreground">Task Pipeline</h3>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between px-1">
+        <p className="text-[10px] uppercase tracking-[0.22em] font-medium text-muted-foreground/80">
+          Task Pipeline
+        </p>
+        <p className="text-[10px] text-mono tabular-nums text-muted-foreground/60">
+          {allTasks.length} active
+        </p>
+      </div>
 
-      {/* Pipeline flow */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-2">
+      <div className="flex items-stretch gap-1.5 overflow-x-auto pb-1">
         {stages.map((stage, i) => {
           const Icon = stage.icon;
           const hasItems = stage.count > 0;
           return (
             <div key={stage.key} className="flex items-center shrink-0">
-              <div className={`rounded-lg border p-2 min-w-[100px] transition-colors ${hasItems ? "border-border/40 bg-card/60" : "border-border/10 bg-card/20 opacity-50"}`}>
-                <div className="flex items-center gap-1.5 mb-1">
+              <div
+                className={`rounded-lg p-3 min-w-[112px] transition-all duration-300 ${
+                  hasItems
+                    ? "surface-2"
+                    : "border border-white/[0.04] bg-white/[0.01] opacity-50"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-2">
                   <Icon className={`h-3 w-3 ${stage.color}`} />
-                  <span className="text-[10px] font-medium text-muted-foreground">{stage.label}</span>
+                  <span className="text-[9.5px] uppercase tracking-[0.15em] font-medium text-muted-foreground">
+                    {stage.label}
+                  </span>
                 </div>
-                <p className={`text-lg font-semibold font-mono tabular-nums ${hasItems ? "text-foreground" : "text-muted-foreground/50"}`}>
+                <p
+                  className={`stat-display text-2xl font-semibold leading-none ${
+                    hasItems ? "text-foreground" : "text-muted-foreground/40"
+                  }`}
+                >
                   {stage.count}
                 </p>
                 {stage.items.length > 0 && (
-                  <div className="mt-1 space-y-0.5">
+                  <div className="mt-2 space-y-0.5 pt-2 border-t border-white/[0.04]">
                     {stage.items.map(item => (
-                      <p key={item.id} className="text-[8px] text-muted-foreground truncate max-w-[90px]">
-                        {item.agent && <span className="text-primary/70">{item.agent}: </span>}
+                      <p key={item.id} className="text-[9px] text-muted-foreground truncate max-w-[100px] leading-tight">
+                        {item.agent && <span className="text-primary/80 font-medium">{item.agent}: </span>}
                         {item.title}
                       </p>
                     ))}
@@ -135,7 +153,7 @@ export function TaskPipelineView() {
                 )}
               </div>
               {i < stages.length - 1 && (
-                <ArrowRight className={`h-3 w-3 mx-0.5 shrink-0 ${hasItems ? "text-muted-foreground/50" : "text-muted-foreground/20"}`} />
+                <ArrowRight className={`h-3 w-3 mx-1 shrink-0 transition-colors ${hasItems ? "text-primary/40" : "text-muted-foreground/15"}`} />
               )}
             </div>
           );

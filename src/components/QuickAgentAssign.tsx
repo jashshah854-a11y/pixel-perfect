@@ -95,17 +95,19 @@ export function QuickAgentAssign() {
   });
 
   return (
-    <div className="rounded-lg border border-border/20 bg-card/40 p-3 space-y-2">
-      <div className="flex items-center gap-1.5">
-        <UserPlus className="h-3.5 w-3.5 text-primary" />
-        <span className="text-xs font-medium">Quick Assign</span>
+    <div className="surface-2 rounded-lg p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <UserPlus className="h-3 w-3 text-primary" />
+          <span className="text-[9.5px] uppercase tracking-[0.18em] font-medium text-muted-foreground">Quick Assign</span>
+        </div>
       </div>
 
       <Input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="Task title..."
-        className="text-xs h-7"
+        placeholder="Task title…"
+        className="text-[11.5px] h-8"
         onKeyDown={(e) => {
           if (e.key === "Enter" && title.trim()) assignTask.mutate();
         }}
@@ -113,7 +115,7 @@ export function QuickAgentAssign() {
 
       <div className="flex gap-1.5">
         <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-          <SelectTrigger className="h-7 text-[11px] flex-1">
+          <SelectTrigger className="h-8 text-[11px] flex-1">
             <SelectValue placeholder="Auto-assign" />
           </SelectTrigger>
           <SelectContent>
@@ -121,7 +123,13 @@ export function QuickAgentAssign() {
             {(agents || []).map(a => (
               <SelectItem key={a.id} value={a.id} className="text-xs">
                 <span className="flex items-center gap-1.5">
-                  <span className={`h-1.5 w-1.5 rounded-full ${a.status === "working" ? "bg-emerald-400" : a.status === "idle" ? "bg-muted-foreground" : "bg-amber-400"}`} />
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor:
+                      a.status === "working" ? "oklch(72% 0.18 155)" :
+                      a.status === "idle"    ? "oklch(50% 0.005 250)" :
+                                               "oklch(74% 0.18 65)" }}
+                  />
                   {a.name}
                   <span className="text-muted-foreground">({a.department})</span>
                 </span>
@@ -133,7 +141,7 @@ export function QuickAgentAssign() {
         <select
           value={priority}
           onChange={(e) => setPriority(e.target.value)}
-          className="h-7 rounded-md border bg-background px-1.5 text-[11px] w-20"
+          className="h-8 rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm px-2 text-[11px] w-20 text-foreground hover:border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-ring/60"
         >
           <option value="low">Low</option>
           <option value="medium">Med</option>
@@ -144,12 +152,12 @@ export function QuickAgentAssign() {
 
       <Button
         size="sm"
-        className="w-full h-7 text-xs"
+        className="w-full h-8 text-[11px]"
         onClick={() => title.trim() && assignTask.mutate()}
         disabled={!title.trim() || assignTask.isPending}
       >
         <Send className="h-3 w-3 mr-1" />
-        {assignTask.isPending ? "Assigning..." : selectedAgent && selectedAgent !== "auto" ? "Assign to Agent" : "Create & Auto-Assign"}
+        {assignTask.isPending ? "Assigning…" : selectedAgent && selectedAgent !== "auto" ? "Assign to Agent" : "Create & Auto-Assign"}
       </Button>
     </div>
   );
