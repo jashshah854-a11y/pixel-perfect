@@ -5,6 +5,7 @@ import { AgentCard } from "@/components/AgentCard";
 import { TaskForm } from "@/components/TaskForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function AgentsPage() {
   const queryClient = useQueryClient();
@@ -45,10 +46,14 @@ export default function AgentsPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold">Agents</h2>
+      <div className="space-y-5 p-1">
+        <PageHeader
+          eyebrow="Roster · Live"
+          title="Agents"
+          description={`${agents?.length ?? 0} autonomous operators online`}
+        />
         {isLoading ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Array.from({ length: 7 }).map((_, i) => (
               <Skeleton key={i} className="h-32 rounded-lg" />
             ))}

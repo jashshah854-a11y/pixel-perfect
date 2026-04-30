@@ -5,6 +5,7 @@ import { InboxMessage } from "@/components/InboxMessage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { PageHeader } from "@/components/PageHeader";
 import { Trash2, Inbox, Eye, Zap, CheckCircle, XCircle } from "lucide-react";
 import {
   AlertDialog,
@@ -87,43 +88,47 @@ export default function InboxPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={unreadCount}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Inbox</h2>
-          <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <Button size="sm" variant="outline" onClick={() => markAllRead.mutate()}>
-                Mark all read
-              </Button>
-            )}
-            {messages && messages.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
-                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear All
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Clear all messages?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently remove all inbox messages. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => clearAll.mutate()}>
-                      Clear All
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
-        </div>
+      <div className="space-y-5 p-1">
+        <PageHeader
+          eyebrow="Signal · Inbound"
+          title="Inbox"
+          description={unreadCount > 0 ? `${unreadCount} unread · ${messages?.length ?? 0} total` : `${messages?.length ?? 0} messages`}
+          actions={
+            <>
+              {unreadCount > 0 && (
+                <Button size="sm" variant="outline" onClick={() => markAllRead.mutate()}>
+                  Mark all read
+                </Button>
+              )}
+              {messages && messages.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="text-destructive hover:text-destructive border-destructive/20 hover:border-destructive/40 hover:bg-destructive/5">
+                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear All
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear all messages?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove all inbox messages. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => clearAll.mutate()}>
+                        Clear All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </>
+          }
+        />
 
         {/* Status filter tabs */}
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/30 border border-border/30 w-fit">
+        <div className="flex items-center gap-1 p-1 rounded-lg surface-1 w-fit">
           {STATUS_FILTERS.map(({ value, label, icon: Icon }) => {
             const count = value ? (statusCounts[value] || 0) : (messages?.length || 0);
             const isActive = filterStatus === value;
@@ -131,17 +136,17 @@ export default function InboxPage() {
               <button
                 key={value}
                 onClick={() => setFilterStatus(value)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all press-effect ${
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    ? "bg-gradient-accent text-primary-foreground shadow-glow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
                 }`}
               >
                 <Icon className="h-3 w-3" />
                 {label}
                 {count > 0 && (
-                  <span className={`text-[9px] px-1 py-0.5 rounded-full min-w-[16px] text-center ${
-                    isActive ? "bg-primary-foreground/20" : "bg-muted/50"
+                  <span className={`text-[9px] px-1 py-0.5 rounded-full min-w-[16px] text-center text-mono tabular-nums ${
+                    isActive ? "bg-white/20" : "bg-white/[0.06]"
                   }`}>
                     {count}
                   </span>
@@ -153,7 +158,11 @@ export default function InboxPage() {
 
         {/* Type and agent filters */}
         <div className="flex gap-2 flex-wrap">
-          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm">
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm px-3 py-1.5 text-[12px] text-foreground hover:border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-ring/60 transition-colors"
+          >
             <option value="">All Types</option>
             <option value="critique">Critique</option>
             <option value="question">Question</option>
@@ -162,7 +171,11 @@ export default function InboxPage() {
             <option value="recommendation">Recommendation</option>
             <option value="plan_decompose">Plan Decompose</option>
           </select>
-          <select value={filterAgent} onChange={(e) => setFilterAgent(e.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm">
+          <select
+            value={filterAgent}
+            onChange={(e) => setFilterAgent(e.target.value)}
+            className="rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm px-3 py-1.5 text-[12px] text-foreground hover:border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-ring/60 transition-colors"
+          >
             <option value="">All Agents</option>
             {agents?.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
@@ -183,9 +196,12 @@ export default function InboxPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            {filterStatus ? `No ${filterStatus} messages.` : "No messages yet."}
-          </p>
+          <div className="empty-state">
+            <Inbox className="h-6 w-6 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-[12px] text-muted-foreground">
+              {filterStatus ? `No ${filterStatus} messages.` : "No messages yet."}
+            </p>
+          </div>
         )}
       </div>
     </Layout>

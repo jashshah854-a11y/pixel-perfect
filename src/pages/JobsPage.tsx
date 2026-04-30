@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
+import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
@@ -115,28 +117,35 @@ export default function JobsPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-xl font-semibold">Ghost Sweep Jobs</h2>
-          <div className="flex gap-2">
-            <button
-              onClick={triggerSweep}
-              disabled={sweepLoading}
-              className="flex items-center gap-1.5 text-xs rounded-md bg-primary text-primary-foreground px-3 py-1.5 hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              <Zap className={`h-3 w-3 ${sweepLoading ? "animate-pulse" : ""}`} />
-              {sweepLoading ? "Sweeping..." : "Trigger Sweep"}
-            </button>
-            <button
-              onClick={syncJobs}
-              disabled={syncLoading}
-              className="flex items-center gap-1.5 text-xs rounded-md border px-3 py-1.5 hover:bg-muted/50 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`h-3 w-3 ${syncLoading ? "animate-spin" : ""}`} />
-              {syncLoading ? "Syncing..." : "Sync Jobs"}
-            </button>
-          </div>
-        </div>
+      <div className="space-y-5 p-1">
+        <PageHeader
+          eyebrow="Sentinel · Ghost Sweep"
+          title="Job Pipeline"
+          description="Live ATS scrapes, deduplication, and verdict assignment by Hawkeye."
+          actions={
+            <>
+              <Button
+                size="sm"
+                onClick={triggerSweep}
+                disabled={sweepLoading}
+                className="gap-1.5"
+              >
+                <Zap className={`h-3.5 w-3.5 ${sweepLoading ? "animate-pulse" : ""}`} />
+                {sweepLoading ? "Sweeping…" : "Trigger Sweep"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={syncJobs}
+                disabled={syncLoading}
+                className="gap-1.5"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${syncLoading ? "animate-spin" : ""}`} />
+                {syncLoading ? "Syncing…" : "Sync Jobs"}
+              </Button>
+            </>
+          }
+        />
 
         <div className="flex gap-2 flex-wrap">
           <select value={filterVerdict} onChange={(e) => setFilterVerdict(e.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm">
