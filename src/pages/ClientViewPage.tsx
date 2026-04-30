@@ -66,35 +66,43 @@ export default function ClientViewPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={inbox?.length || 0}>
-      <div className="space-y-6 max-w-4xl mx-auto">
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">Deliverables</h2>
-          <span className="text-xs text-muted-foreground ml-2">Clean output view — no internal complexity</span>
-        </div>
+      <div className="space-y-6 max-w-4xl mx-auto p-1">
+        <PageHeader
+          eyebrow="Client View · Public"
+          title="Deliverables"
+          description="Clean output view — completed work and progress, no internal complexity."
+        />
 
         {/* Progress summary */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Queued", count: queuedTasks.length, icon: Clock, color: "text-muted-foreground" },
-            { label: "In Progress", count: inProgressTasks.length, icon: Clock, color: "text-amber-400" },
-            { label: "Completed", count: doneTasks.length, icon: CheckCircle, color: "text-emerald-400" },
-          ].map(s => (
-            <div key={s.label} className="rounded-xl border border-border/30 bg-card/60 p-3 flex items-center gap-3">
-              <s.icon className={`h-4 w-4 ${s.color}`} />
-              <div>
-                <p className="text-lg font-semibold font-mono">{s.count}</p>
-                <p className="text-[10px] text-muted-foreground">{s.label}</p>
+            { label: "Queued",      count: queuedTasks.length,     icon: Clock,         tone: "muted" },
+            { label: "In Progress", count: inProgressTasks.length, icon: Clock,         tone: "warn" },
+            { label: "Completed",   count: doneTasks.length,       icon: CheckCircle,   tone: "positive" },
+          ].map(s => {
+            const toneStyle =
+              s.tone === "positive" ? { color: "oklch(72% 0.18 155)" } :
+              s.tone === "warn"     ? { color: "oklch(74% 0.18 65)" } :
+                                      { color: "oklch(60% 0 0)" };
+            return (
+              <div key={s.label} className="surface-2 rounded-xl p-4 flex items-center gap-3">
+                <s.icon className="h-4 w-4" style={toneStyle} />
+                <div>
+                  <p className="stat-display text-2xl font-semibold leading-none" style={toneStyle}>{s.count}</p>
+                  <p className="text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground mt-1">{s.label}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Completed work with outputs */}
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">Completed Work & Deliverables</h3>
+          <p className="text-[10px] uppercase tracking-[0.22em] font-medium text-muted-foreground/80 px-1">Completed Work & Deliverables</p>
           {doneTasks.length === 0 && (
-            <p className="text-sm text-muted-foreground py-6 text-center">No completed work yet.</p>
+            <div className="empty-state">
+              <p className="text-[12px] text-muted-foreground">No completed work yet.</p>
+            </div>
           )}
           {doneTasks.map(task => {
             const taskOutputs = outputMap[task.id] || [];

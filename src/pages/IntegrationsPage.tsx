@@ -92,27 +92,29 @@ export default function IntegrationsPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <h2 className="text-xl font-semibold">Integrations</h2>
-          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />
-              {activeCount} active
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-yellow-500 inline-block" />
-              {availableCount} available
-            </span>
-            {errorCount > 0 && (
-              <span className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 inline-block" />
-                {errorCount} error
+      <div className="max-w-2xl mx-auto space-y-6 p-1">
+        <PageHeader
+          eyebrow="Stack · Connected"
+          title="Integrations"
+          description={
+            <>
+              <span className="inline-flex items-center gap-1.5 mr-3">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: "oklch(72% 0.18 155)", boxShadow: "0 0 6px oklch(72% 0.18 155 / 0.6)" }} />
+                <span className="text-mono tabular-nums">{activeCount}</span> active
               </span>
-            )}
-          </p>
-        </div>
+              <span className="inline-flex items-center gap-1.5 mr-3">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: "oklch(80% 0.15 100)" }} />
+                <span className="text-mono tabular-nums">{availableCount}</span> available
+              </span>
+              {errorCount > 0 && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: "oklch(64% 0.22 25)" }} />
+                  <span className="text-mono tabular-nums">{errorCount}</span> error
+                </span>
+              )}
+            </>
+          }
+        />
 
         {isLoading ? (
           <div className="space-y-3">

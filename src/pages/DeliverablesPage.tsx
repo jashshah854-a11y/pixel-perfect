@@ -162,60 +162,66 @@ export default function DeliverablesPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={inbox?.length || 0}>
-      <div className="space-y-5 max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">Deliverables</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => triggerTick.mutate()}
-              disabled={triggerTick.isPending}
-              className="gap-1.5"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${triggerTick.isPending ? 'animate-spin' : ''}`} />
-              Run Tick
-            </Button>
-            {totalOutputs > 0 && (
-              <Button size="sm" variant="outline" onClick={downloadAll} className="gap-1.5">
-                <Download className="h-3.5 w-3.5" /> Export All
+      <div className="space-y-5 max-w-5xl mx-auto p-1">
+        <PageHeader
+          eyebrow="Output · Verifiable"
+          title="Deliverables"
+          description={`${totalOutputs} artifacts produced · ${totalLines.toLocaleString()} lines of generated work`}
+          actions={
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => triggerTick.mutate()}
+                disabled={triggerTick.isPending}
+                className="gap-1.5"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${triggerTick.isPending ? 'animate-spin' : ''}`} />
+                Run Tick
               </Button>
-            )}
-          </div>
-        </div>
+              {totalOutputs > 0 && (
+                <Button size="sm" variant="outline" onClick={downloadAll} className="gap-1.5">
+                  <Download className="h-3.5 w-3.5" /> Export All
+                </Button>
+              )}
+            </>
+          }
+        />
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-3">
+        {/* Stats — editorial display */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "Total Outputs", value: totalOutputs, icon: Package, color: "text-primary" },
-            { label: "Code Artifacts", value: codeOutputs, icon: Code, color: "text-blue-400" },
-            { label: "Reports", value: reportOutputs, icon: FileText, color: "text-emerald-400" },
-            { label: "Total Lines", value: totalLines.toLocaleString(), icon: BarChart3, color: "text-violet-400" },
-          ].map(s => (
-            <div key={s.label} className="rounded-xl border border-border/30 bg-card/60 p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <s.icon className={`h-3.5 w-3.5 ${s.color}`} />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</span>
+            { label: "Total Outputs",  value: totalOutputs,                 icon: Package,   tone: "primary" },
+            { label: "Code Artifacts", value: codeOutputs,                  icon: Code,      tone: "primary" },
+            { label: "Reports",        value: reportOutputs,                icon: FileText,  tone: "positive" },
+            { label: "Total Lines",    value: totalLines.toLocaleString(),  icon: BarChart3, tone: "primary" },
+          ].map(s => {
+            const toneStyle =
+              s.tone === "positive" ? { color: "oklch(72% 0.18 155)" } :
+                                       { color: "hsl(var(--primary))" };
+            return (
+              <div key={s.label} className="surface-2 rounded-xl p-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <s.icon className="h-3 w-3" style={toneStyle} />
+                  <span className="text-[9.5px] uppercase tracking-[0.18em] font-medium text-muted-foreground">{s.label}</span>
+                </div>
+                <div className="hairline mb-2 opacity-50" />
+                <p className="stat-display text-2xl font-semibold leading-none">{s.value}</p>
               </div>
-              <p className="text-lg font-semibold font-mono">{s.value}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Filter */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 p-1 rounded-lg surface-1 w-fit">
           {["", "code", "report"].map(type => (
             <button
               key={type}
               onClick={() => setFilterType(type)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all press-effect ${
                 filterType === type
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  ? "bg-gradient-accent text-primary-foreground shadow-glow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
               }`}
             >
               {type || "All"} {type && `(${type === "code" ? codeOutputs : reportOutputs})`}
