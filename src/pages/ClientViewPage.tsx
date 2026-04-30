@@ -67,7 +67,7 @@ export default function ClientViewPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={inbox?.length || 0}>
-      <div className="space-y-6 max-w-4xl mx-auto p-1">
+      <div className="space-y-5 max-w-4xl mx-auto p-1">
         <PageHeader
           eyebrow="Client View · Public"
           title="Deliverables"

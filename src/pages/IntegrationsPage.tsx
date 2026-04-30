@@ -93,7 +93,7 @@ export default function IntegrationsPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
-      <div className="max-w-2xl mx-auto space-y-6 p-1">
+      <div className="max-w-2xl mx-auto space-y-5 p-1">
         <PageHeader
           eyebrow="Stack · Connected"
           title="Integrations"

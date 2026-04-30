@@ -103,7 +103,7 @@ export default function Dashboard() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={unreadCount}>
-      <div className="space-y-6">
+      <div className="space-y-5 p-1">
         <PageHeader
           eyebrow="Command · Live"
           title="Dashboard"
