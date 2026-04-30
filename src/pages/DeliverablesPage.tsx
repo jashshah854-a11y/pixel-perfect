@@ -380,14 +380,16 @@ export default function DeliverablesPage() {
             })}
           </div>
         ) : (
-          <div className="text-center py-12 space-y-3">
-            <Package className="h-8 w-8 text-muted-foreground/30 mx-auto" />
-            <p className="text-sm text-muted-foreground">No deliverables yet.</p>
-            <p className="text-xs text-muted-foreground/60">Create a plan or task, then run the autonomous tick to generate outputs.</p>
-            <Button size="sm" variant="outline" onClick={() => triggerTick.mutate()} disabled={triggerTick.isPending}>
-              <Zap className="h-3.5 w-3.5 mr-1" /> Run Autonomous Tick
-            </Button>
-          </div>
+          <EmptyState
+            title="No deliverables yet"
+            description="Create a plan or task, then run the autonomous tick to generate verifiable outputs."
+            icon={<Package className="h-5 w-5" />}
+            action={
+              <Button size="sm" variant="outline" onClick={() => triggerTick.mutate()} disabled={triggerTick.isPending}>
+                <Zap className="h-3.5 w-3.5 mr-1" /> Run Autonomous Tick
+              </Button>
+            }
+          />
         )}
       </div>
     </Layout>
