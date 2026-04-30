@@ -197,7 +197,10 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground px-1">No messages yet.</p>
+              <EmptyState
+                title="Inbox is quiet"
+                description="Agent messages and signal events will surface here."
+              />
             )}
           </div>
           <div className="space-y-3">
