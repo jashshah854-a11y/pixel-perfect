@@ -178,46 +178,50 @@ export default function PlansPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Plans</h2>
-          <div className="flex items-center gap-2">
-            {plans && plans.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
-                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear All
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Clear all plans?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently remove all plans. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => clearAllPlans.mutate()}>
-                      Clear All
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-            <Button size="sm" onClick={() => { setFormOpen(true); setOrchestrationResult(null); }}>
-              <Plus className="h-4 w-4 mr-1" /> New Plan
-            </Button>
-          </div>
-        </div>
+      <div className="space-y-5 p-1">
+        <PageHeader
+          eyebrow="Strategy · Decomposition"
+          title="Plans"
+          description={`${plans?.length ?? 0} active plans · auto-decomposed into executable tasks`}
+          actions={
+            <>
+              {plans && plans.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="text-destructive hover:text-destructive border-destructive/20 hover:border-destructive/40 hover:bg-destructive/5">
+                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear All
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear all plans?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove all plans. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => clearAllPlans.mutate()}>
+                        Clear All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              <Button size="sm" onClick={() => { setFormOpen(true); setOrchestrationResult(null); }}>
+                <Plus className="h-4 w-4 mr-1" /> New Plan
+              </Button>
+            </>
+          }
+        />
 
         {/* Live Orchestration View */}
         {orchestrationResult && (
-          <div className="rounded-lg border border-primary/20 bg-card p-4">
+          <div className="surface-2 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <GitBranch className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-semibold">Live Orchestration</h3>
+                <GitBranch className="h-3.5 w-3.5 text-primary" />
+                <h3 className="text-[10px] uppercase tracking-[0.2em] font-medium text-muted-foreground">Live Orchestration</h3>
               </div>
               <Button
                 size="sm"
