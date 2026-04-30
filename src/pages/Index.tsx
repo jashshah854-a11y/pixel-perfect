@@ -180,11 +180,16 @@ export default function Dashboard() {
 
         {/* Recent Inbox + Research */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-muted-foreground">Recent Inbox</h3>
-              <button onClick={() => navigate("/inbox")} className="text-xs text-primary hover:underline">View all</button>
-            </div>
+          <div className="space-y-3">
+            <SectionLabel
+              accent={
+                <button onClick={() => navigate("/inbox")} className="text-[10px] text-mono uppercase tracking-[0.18em] text-primary hover:underline">
+                  View all
+                </button>
+              }
+            >
+              Recent Inbox
+            </SectionLabel>
             {inbox && inbox.length > 0 ? (
               <div className="space-y-2">
                 {inbox.map((msg) => (
@@ -192,14 +197,13 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No messages yet.</p>
+              <p className="text-sm text-muted-foreground px-1">No messages yet.</p>
             )}
           </div>
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium text-muted-foreground">Agent Research</h3>
-            </div>
+          <div className="space-y-3">
+            <SectionLabel accent={<BookOpen className="h-3 w-3 text-muted-foreground/60" />}>
+              Agent Research
+            </SectionLabel>
             <ResearchFeed agentMap={agentMap} />
           </div>
         </div>
