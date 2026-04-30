@@ -162,49 +162,75 @@ export default function OfficePage() {
             <div className="relative flex-1 min-h-0">
               <OfficeCanvas agents={agents} onAgentClick={handleAgentClick} />
 
-              {/* Agent detail popover */}
-              {selected && (
-                <div
-                  className="fixed z-50 w-64 p-3 rounded-lg border bg-popover text-popover-foreground shadow-lg space-y-2"
-                  style={{ left: selected.x - 128, top: selected.y - 200 }}
-                >
-                  <button
-                    onClick={() => setSelected(null)}
-                    className="absolute top-1 right-2 text-muted-foreground hover:text-foreground text-xs"
+              {/* Agent detail popover — atmospheric, smart-positioned */}
+              {selected && (() => {
+                const POPOVER_W = 272;
+                const POPOVER_H = 220;
+                const PAD = 12;
+                const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
+                const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+                const left = Math.min(Math.max(PAD, selected.x - POPOVER_W / 2), vw - POPOVER_W - PAD);
+                const top  = Math.min(Math.max(PAD, selected.y - POPOVER_H - 16), vh - POPOVER_H - PAD);
+                const initial = agents?.find(a => a.id === selected.agent.id);
+                const ag = initial ?? selected.agent;
+                return (
+                  <div
+                    className="fixed z-50 surface-3 rounded-xl p-4 space-y-3 enter-scale"
+                    style={{ left, top, width: POPOVER_W }}
                   >
-                    ✕
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground">
-                      {selected.agent.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{selected.agent.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{selected.agent.role}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Department</span>
-                      <span>{selected.agent.department}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Status</span>
-                      <span className="capitalize">{selected.agent.status}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Tokens</span>
-                      <span className="font-mono">{selected.agent.tokens_used.toLocaleString()}</span>
-                    </div>
-                    {selected.agent.current_task && (
-                      <div>
-                        <span className="text-muted-foreground block">Current Task</span>
-                        <p className="mt-0.5">{selected.agent.current_task}</p>
+                    <button
+                      onClick={() => setSelected(null)}
+                      className="absolute top-2 right-2.5 h-5 w-5 grid place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors text-[11px]"
+                      aria-label="Close"
+                    >
+                      ✕
+                    </button>
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-9 w-9 rounded-full bg-gradient-accent grid place-items-center text-[13px] font-display font-bold text-primary-foreground shadow-glow-sm">
+                        {ag.name.charAt(0)}
                       </div>
-                    )}
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-medium leading-tight truncate">{ag.name}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{ag.role}</p>
+                      </div>
+                    </div>
+
+                    <div className="hairline" />
+
+                    <div className="space-y-1.5 text-[11.5px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Department</span>
+                        <span className="text-foreground/90">{ag.department}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Status</span>
+                        <span className="capitalize flex items-center gap-1.5">
+                          <span
+                            className="status-dot status-dot--active"
+                            style={{ backgroundColor:
+                              ag.status === "working" ? "hsl(var(--status-working))" :
+                              ag.status === "blocked" ? "hsl(var(--status-blocked))" :
+                              ag.status === "queued"  ? "hsl(var(--status-queued))"  :
+                              "hsl(var(--status-idle))"
+                            }}
+                          />
+                          {ag.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Tokens</span>
+                        <span className="text-mono tabular-nums text-foreground/90">{ag.tokens_used.toLocaleString()}</span>
+                      </div>
+                      {ag.current_task && (
+                        <div className="pt-2 mt-1 border-t border-white/[0.05]">
+                          <span className="text-muted-foreground text-[10px] uppercase tracking-wider block mb-1">Current Task</span>
+                          <p className="text-[11.5px] leading-snug text-foreground/85">{ag.current_task}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           ) : null}
 
