@@ -57,7 +57,7 @@ export default function TasksPage() {
 
   const updateTaskStatus = useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
-      const update: Record<string, unknown> = { status };
+      const update: { status: string; completed_at?: string } = { status };
       if (status === "done") update.completed_at = new Date().toISOString();
       await supabase.from("tasks").update(update).eq("id", taskId);
     },
