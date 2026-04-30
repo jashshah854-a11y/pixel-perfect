@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { RefreshCw, Plug, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PageHeader, SectionLabel } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -102,17 +104,22 @@ export default function Dashboard() {
   return (
     <Layout totalTokens={totalTokens} unreadCount={unreadCount}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Dashboard</h2>
-          <button
-            onClick={refreshStats}
-            disabled={loadingStats}
-            className="flex items-center gap-1.5 text-xs rounded-md border px-2.5 py-1.5 hover:bg-muted/50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3 w-3 ${loadingStats ? "animate-spin" : ""}`} />
-            Refresh Stats
-          </button>
-        </div>
+        <PageHeader
+          eyebrow="Command · Live"
+          title="Dashboard"
+          description="Real-time view of agents, pipeline, and signal flow."
+          actions={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={refreshStats}
+              disabled={loadingStats}
+            >
+              <RefreshCw className={`h-3 w-3 mr-1.5 ${loadingStats ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          }
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -154,8 +161,8 @@ export default function Dashboard() {
         </div>
 
         {/* Agent Grid */}
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">Agents</h3>
+        <div className="space-y-3">
+          <SectionLabel count={agents?.length}>Agents</SectionLabel>
           {loadingAgents ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 7 }).map((_, i) => (
@@ -173,11 +180,16 @@ export default function Dashboard() {
 
         {/* Recent Inbox + Research */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-muted-foreground">Recent Inbox</h3>
-              <button onClick={() => navigate("/inbox")} className="text-xs text-primary hover:underline">View all</button>
-            </div>
+          <div className="space-y-3">
+            <SectionLabel
+              accent={
+                <button onClick={() => navigate("/inbox")} className="text-[10px] text-mono uppercase tracking-[0.18em] text-primary hover:underline">
+                  View all
+                </button>
+              }
+            >
+              Recent Inbox
+            </SectionLabel>
             {inbox && inbox.length > 0 ? (
               <div className="space-y-2">
                 {inbox.map((msg) => (
@@ -185,14 +197,13 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No messages yet.</p>
+              <p className="text-sm text-muted-foreground px-1">No messages yet.</p>
             )}
           </div>
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium text-muted-foreground">Agent Research</h3>
-            </div>
+          <div className="space-y-3">
+            <SectionLabel accent={<BookOpen className="h-3 w-3 text-muted-foreground/60" />}>
+              Agent Research
+            </SectionLabel>
             <ResearchFeed agentMap={agentMap} />
           </div>
         </div>
