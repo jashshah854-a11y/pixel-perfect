@@ -106,7 +106,7 @@ export default function AnalyticsPage() {
 
   return (
     <Layout totalTokens={totalTokens} unreadCount={inbox?.length || 0}>
-      <div className="space-y-6 max-w-6xl mx-auto p-1">
+      <div className="space-y-5 max-w-6xl mx-auto p-1">
         <PageHeader
           eyebrow="Telemetry · Live"
           title="System Analytics"
