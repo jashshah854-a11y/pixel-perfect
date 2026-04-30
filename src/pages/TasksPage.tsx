@@ -151,41 +151,38 @@ export default function TasksPage() {
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
       <div className="space-y-5 p-1">
-        <header className="flex items-end justify-between gap-4 pt-2">
-          <div className="space-y-0.5">
-            <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground/70">
-              Workflow · Kanban
-            </p>
-            <h1 className="text-display text-3xl font-semibold leading-none">Tasks</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {(tasks?.length || 0) > 0 && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-destructive hover:text-destructive border-destructive/20 hover:border-destructive/40 hover:bg-destructive/5"
-                onClick={async () => {
-                  const { error } = await supabase.from("tasks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-                  if (!error) {
-                    queryClient.invalidateQueries({ queryKey: ["tasks"] });
-                    queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
-                    queryClient.invalidateQueries({ queryKey: ["agents"] });
-                    toast.success("All tasks cleared");
-                  } else {
-                    toast.error("Failed to clear tasks");
-                  }
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-1" /> Clear All
+        <PageHeader
+          eyebrow="Workflow · Kanban"
+          title="Tasks"
+          description={`${tasks?.length ?? 0} tasks across the pipeline`}
+          actions={
+            <>
+              {(tasks?.length || 0) > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive border-destructive/20 hover:border-destructive/40 hover:bg-destructive/5"
+                  onClick={async () => {
+                    const { error } = await supabase.from("tasks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+                    if (!error) {
+                      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+                      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
+                      queryClient.invalidateQueries({ queryKey: ["agents"] });
+                      toast.success("All tasks cleared");
+                    } else {
+                      toast.error("Failed to clear tasks");
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" /> Clear All
+                </Button>
+              )}
+              <Button size="sm" onClick={() => setFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> New Task
               </Button>
-            )}
-            <Button size="sm" onClick={() => setFormOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> New Task
-            </Button>
-          </div>
-        </header>
-
-        <div className="hairline" />
+            </>
+          }
+        />
 
         {/* Filters */}
         <div className="flex gap-2 flex-wrap">
