@@ -122,43 +122,62 @@ export default function Dashboard() {
           }
         />
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Queued" value={queued} />
-          <StatCard label="In Progress" value={inProgress} />
-          <StatCard label="Done Today" value={doneToday} />
-          <StatCard label="Unread Inbox" value={unreadCount} />
+        {/* Pipeline Stats */}
+        <div className="space-y-3">
+          <SectionLabel count={(queued + inProgress + doneToday + unreadCount) || 0}>
+            Pipeline
+          </SectionLabel>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard label="Queued" value={queued} />
+            <StatCard label="In Progress" value={inProgress} />
+            <StatCard label="Done Today" value={doneToday} />
+            <StatCard label="Unread Inbox" value={unreadCount} />
+          </div>
         </div>
 
-        {/* Neon Stats */}
+        {/* Sweep Telemetry */}
         {neonStats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="Applications" value={neonStats.total_applications || 0} />
-            <StatCard label="Jobs Queued" value={neonStats.jobs_queued || 0} />
-            <StatCard label="Ghost Signals" value={neonStats.ghost_signals_scored || 0} />
-            <StatCard label="Active Tools" value={activeTools} />
+          <div className="space-y-3">
+            <SectionLabel count={(neonStats.total_applications || 0)}>
+              Sweep Telemetry
+            </SectionLabel>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard label="Applications" value={neonStats.total_applications || 0} />
+              <StatCard label="Jobs Queued" value={neonStats.jobs_queued || 0} />
+              <StatCard label="Ghost Signals" value={neonStats.ghost_signals_scored || 0} />
+              <StatCard label="Active Tools" value={activeTools} />
+            </div>
           </div>
         )}
 
-        {/* Tool Status Mini-Row */}
-        <div className="flex items-center gap-4 rounded-lg border bg-card p-3">
-          <Plug className="h-4 w-4 text-muted-foreground" />
-          <div className="flex items-center gap-4 text-xs font-mono">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-green-500" /> {activeTools} active
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-yellow-500" /> {availableTools} available
-            </span>
-            {needsSetupTools > 0 && (
+        {/* Tool Status */}
+        <div className="space-y-3">
+          <SectionLabel
+            count={activeTools + availableTools + needsSetupTools}
+            accent={
+              <button onClick={() => navigate("/integrations")} className="text-[10px] text-mono uppercase tracking-[0.18em] text-primary hover:underline">
+                View all
+              </button>
+            }
+          >
+            Tool Status
+          </SectionLabel>
+          <div className="surface-1 flex items-center gap-4 rounded-lg p-3">
+            <Plug className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-4 text-xs text-mono tabular-nums">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-red-500" /> {needsSetupTools} needs setup
+                <span className="h-2 w-2 rounded-full bg-green-500" /> {activeTools} active
               </span>
-            )}
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-yellow-500" /> {availableTools} available
+              </span>
+              {needsSetupTools > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-red-500" /> {needsSetupTools} needs setup
+                </span>
+              )}
+            </div>
           </div>
-          <button onClick={() => navigate("/integrations")} className="ml-auto text-xs text-primary hover:underline">
-            View all
-          </button>
         </div>
 
         {/* Agent Grid */}
@@ -183,6 +202,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
             <SectionLabel
+              count={inbox?.length}
               accent={
                 <button onClick={() => navigate("/inbox")} className="text-[10px] text-mono uppercase tracking-[0.18em] text-primary hover:underline">
                   View all
