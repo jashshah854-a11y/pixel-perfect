@@ -7,7 +7,7 @@ interface PageHeaderProps {
   /** Main page title — rendered in display font, large. */
   title: string;
   /** Optional supporting one-liner below the title. */
-  description?: string;
+  description?: ReactNode;
   /** Right-side actions (buttons, filters). */
   actions?: ReactNode;
 }
