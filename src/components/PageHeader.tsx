@@ -30,7 +30,7 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
           <p className="text-[10px] text-mono uppercase tracking-[0.25em] text-muted-foreground/70">
             {eyebrow}
           </p>
-          <h1 className="text-display text-2xl md:text-3xl font-semibold leading-none truncate">
+          <h1 className="text-display text-3xl font-semibold leading-none truncate">
             {title}
           </h1>
           {description && (
