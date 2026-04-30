@@ -19,7 +19,7 @@ interface PageHeaderProps {
  */
 export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
   return (
-    <div className="space-y-3 pt-2">
+    <div className="space-y-3 pt-2" data-visual-id="page-header">
       <motion.div
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
