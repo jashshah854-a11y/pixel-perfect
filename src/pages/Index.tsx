@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { RefreshCw, Plug, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PageHeader, SectionLabel } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   const navigate = useNavigate();
