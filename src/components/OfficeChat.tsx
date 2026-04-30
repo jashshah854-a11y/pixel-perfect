@@ -70,40 +70,45 @@ export function OfficeChat({ agents }: { agents: Agent[] }) {
   const hasMessages = messages && messages.length > 0;
 
   return (
-    <div className="rounded-lg border border-border/20 bg-card/40 backdrop-blur-sm flex flex-col h-36">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-1" style={{ scrollbarWidth: "thin" }}>
+    <div className="surface-2 rounded-lg flex flex-col h-36 overflow-hidden">
+      <div className="flex items-center justify-between px-3 pt-2 pb-1.5">
+        <span className="text-[9.5px] uppercase tracking-[0.18em] font-medium text-muted-foreground">Command Channel</span>
+        <span className="status-dot status-dot--active" style={{ backgroundColor: "oklch(72% 0.18 155)" }} />
+      </div>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 pb-2 space-y-1.5" style={{ scrollbarWidth: "thin" }}>
         {!hasMessages && (
           <div className="flex flex-col items-center justify-center h-full gap-1 text-muted-foreground/30">
             <MessageSquare className="h-4 w-4" />
-            <p className="text-[10px] tracking-wide uppercase">Command Channel</p>
+            <p className="text-[10px] tracking-wider uppercase">No messages</p>
           </div>
         )}
         {messages?.map((msg) => {
           const sender = msg.from_agent ? agentMap[msg.from_agent] || msg.from_agent : "You";
           return (
-            <div key={msg.id} className="text-xs leading-relaxed">
+            <div key={msg.id} className="text-[11.5px] leading-relaxed">
               <span className={`font-medium ${msg.from_agent ? "text-primary" : "text-foreground"}`}>
                 {sender}
-              </span>{" "}
+              </span>
+              <span className="text-muted-foreground/50 mx-1.5">›</span>
               <span className="text-muted-foreground">{msg.message}</span>
             </div>
           );
         })}
       </div>
-      <div className="border-t border-border/15 px-3 py-1.5 flex items-center gap-2">
+      <div className="border-t border-white/[0.04] px-3 py-1.5 flex items-center gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Command..."
-          className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/30"
+          placeholder="Send a command…"
+          className="flex-1 bg-transparent text-[11.5px] outline-none placeholder:text-muted-foreground/40 text-foreground"
         />
         <button
           onClick={sendMessage}
           disabled={!input.trim() || sending}
-          className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-30"
+          className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 press-effect"
         >
-          <Send className="h-3 w-3" />
+          <Send className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>
