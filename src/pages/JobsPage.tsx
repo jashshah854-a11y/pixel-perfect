@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/ListState";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -206,7 +207,10 @@ export default function JobsPage() {
             </table>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No sweep results yet.</p>
+          <EmptyState
+            title="No sweep results yet"
+            description="Run a Ghost Sweep to scan for stealth opportunities and ghost-job signals."
+          />
         )}
 
         {/* Sweep History */}

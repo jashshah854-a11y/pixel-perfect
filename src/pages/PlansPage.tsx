@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/ListState";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PlanPreview } from "@/components/PlanPreview";
 import { OrchestrationFlowView } from "@/components/OrchestrationFlowView";
@@ -289,7 +290,10 @@ export default function PlansPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No plans yet.</p>
+          <EmptyState
+            title="No plans yet"
+            description="Draft a strategic plan to decompose into tasks across the agent roster."
+          />
         )}
       </div>
 

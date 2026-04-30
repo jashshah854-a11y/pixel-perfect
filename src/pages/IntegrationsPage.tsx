@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/ListState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Plug, Loader2 } from "lucide-react";
@@ -198,7 +199,10 @@ export default function IntegrationsPage() {
         )}
 
         {!isLoading && sortedCategories.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8">No integrations configured.</p>
+          <EmptyState
+            title="No integrations configured"
+            description="Connect a tool or API to expand the agent stack."
+          />
         )}
       </div>
     </Layout>
