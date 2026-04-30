@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Zap, Brain, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { playClaimChime, playDropConfirm } from "@/lib/sounds";
+import { PageHeader } from "@/components/PageHeader";
 
 const columns = [
   { key: "queued", label: "Queued" },
