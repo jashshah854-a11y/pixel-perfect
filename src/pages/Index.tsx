@@ -161,8 +161,8 @@ export default function Dashboard() {
         </div>
 
         {/* Agent Grid */}
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">Agents</h3>
+        <div className="space-y-3">
+          <SectionLabel count={agents?.length}>Agents</SectionLabel>
           {loadingAgents ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 7 }).map((_, i) => (
