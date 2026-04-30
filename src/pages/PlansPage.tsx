@@ -289,7 +289,10 @@ export default function PlansPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No plans yet.</p>
+          <EmptyState
+            title="No plans yet"
+            description="Draft a strategic plan to decompose into tasks across the agent roster."
+          />
         )}
       </div>
 
