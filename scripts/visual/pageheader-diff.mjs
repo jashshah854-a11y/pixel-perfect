@@ -33,9 +33,16 @@ const DIFF_DIR = path.join(ROOT, "scripts/visual/diff");
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:8080";
 const UPDATE = process.argv.includes("--update");
-const VIEWPORT = { width: 1322, height: 893 };
 // Allow up to 0.5% pixel mismatch per route. Tune if anti-aliasing wiggles.
 const MAX_MISMATCH_RATIO = 0.005;
+
+// App targets ≥768px (see mem://constraints/viewport-support). Mobile is
+// intentionally unsupported, so the diff sweep starts at tablet width.
+const VIEWPORTS = [
+  { name: "tablet",  width: 768,  height: 1024 },
+  { name: "laptop",  width: 1366, height: 768  },
+  { name: "wide",    width: 1920, height: 1080 },
+];
 
 const ROUTES = [
   { name: "office",       path: "/" },
@@ -77,10 +84,9 @@ async function captureHeader(page, route) {
   return buf;
 }
 
-async function main() {
-  const browser = await chromium.launch();
+async function runViewport(browser, viewport) {
   const context = await browser.newContext({
-    viewport: VIEWPORT,
+    viewport: { width: viewport.width, height: viewport.height },
     deviceScaleFactor: 1,
     colorScheme: "dark",
   });
@@ -88,22 +94,23 @@ async function main() {
 
   const results = [];
   for (const route of ROUTES) {
-    const actualPath = path.join(ACTUAL_DIR, `${route.name}.png`);
-    const baselinePath = path.join(BASELINE_DIR, `${route.name}.png`);
-    const diffPath = path.join(DIFF_DIR, `${route.name}.png`);
+    const slug = `${viewport.name}__${route.name}`;
+    const actualPath = path.join(ACTUAL_DIR, `${slug}.png`);
+    const baselinePath = path.join(BASELINE_DIR, `${slug}.png`);
+    const diffPath = path.join(DIFF_DIR, `${slug}.png`);
 
     let buf;
     try {
       buf = await captureHeader(page, route);
     } catch (err) {
-      results.push({ route: route.name, status: "error", message: err.message });
+      results.push({ slug, status: "error", message: err.message });
       continue;
     }
     fs.writeFileSync(actualPath, buf);
 
     if (UPDATE || !fs.existsSync(baselinePath)) {
       fs.writeFileSync(baselinePath, buf);
-      results.push({ route: route.name, status: UPDATE ? "updated" : "created" });
+      results.push({ slug, status: UPDATE ? "updated" : "created" });
       continue;
     }
 
@@ -112,7 +119,7 @@ async function main() {
 
     if (actual.width !== baseline.width || actual.height !== baseline.height) {
       results.push({
-        route: route.name,
+        slug,
         status: "fail",
         message: `size mismatch baseline=${baseline.width}x${baseline.height} actual=${actual.width}x${actual.height}`,
       });
@@ -134,18 +141,31 @@ async function main() {
     const ratio = mismatched / (width * height);
     const status = ratio > MAX_MISMATCH_RATIO ? "fail" : "pass";
     results.push({
-      route: route.name,
+      slug,
       status,
       mismatchedPixels: mismatched,
       ratio: +(ratio * 100).toFixed(3),
     });
   }
 
+  await context.close();
+  return results;
+}
+
+async function main() {
+  const browser = await chromium.launch();
+
+  const allResults = [];
+  for (const viewport of VIEWPORTS) {
+    const r = await runViewport(browser, viewport);
+    allResults.push(...r);
+  }
+
   await browser.close();
 
-  console.log("\nPageHeader visual diff");
-  console.log("──────────────────────");
-  for (const r of results) {
+  console.log("\nPageHeader visual diff (tablet → wide; mobile excluded by policy)");
+  console.log("─────────────────────────────────────────────────────────────────");
+  for (const r of allResults) {
     const tag = r.status.toUpperCase().padEnd(7);
     const extra =
       r.status === "pass" || r.status === "fail"
@@ -153,15 +173,15 @@ async function main() {
         : r.message
         ? ` ${r.message}`
         : "";
-    console.log(`${tag} ${r.route}${extra}`);
+    console.log(`${tag} ${r.slug}${extra}`);
   }
 
-  const failed = results.filter((r) => r.status === "fail" || r.status === "error");
+  const failed = allResults.filter((r) => r.status === "fail" || r.status === "error");
   if (failed.length) {
-    console.log(`\n${failed.length} route(s) failed. See scripts/visual/diff/*.png`);
+    console.log(`\n${failed.length} capture(s) failed. See scripts/visual/diff/*.png`);
     process.exit(1);
   }
-  console.log("\nAll routes within tolerance.");
+  console.log("\nAll routes within tolerance across all viewports.");
 }
 
 main().catch((err) => {
