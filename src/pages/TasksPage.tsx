@@ -4,14 +4,14 @@ import { Layout } from "@/components/Layout";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
 import { AssignmentFeed } from "@/components/AssignmentFeed";
-import { IntentPreview } from "@/components/IntentPreview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Zap, Brain, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Plus, Zap, ChevronDown, Trash2, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { playClaimChime, playDropConfirm } from "@/lib/sounds";
 import { PageHeader } from "@/components/PageHeader";
+import { motion, AnimatePresence } from "framer-motion";
 
 const columns = [
   { key: "queued", label: "Queued" },
@@ -28,6 +28,8 @@ export default function TasksPage() {
   const [dragTaskId, setDragTaskId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [expandedIntentId, setExpandedIntentId] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showLog, setShowLog] = useState(false);
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["tasks"],
@@ -148,6 +150,8 @@ export default function TasksPage() {
     setDropTarget(null);
   }, []);
 
+  const activeFilterCount = [filterAgent, filterPriority].filter(Boolean).length;
+
   return (
     <Layout totalTokens={totalTokens} unreadCount={allInbox?.length || 0}>
       <div className="space-y-5 p-1">
@@ -184,28 +188,67 @@ export default function TasksPage() {
           }
         />
 
-        {/* Filters */}
-        <div className="flex gap-2 flex-wrap">
-          <select
-            value={filterAgent}
-            onChange={(e) => setFilterAgent(e.target.value)}
-            className="rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm px-3 py-1.5 text-[12px] text-foreground hover:border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-ring/60 transition-colors"
+        {/* Compact inline toolbar: filter toggle + counts */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${
+              showFilters || activeFilterCount
+                ? "bg-primary/10 text-primary border-primary/30"
+                : "text-muted-foreground border-white/[0.08] hover:border-white/[0.14]"
+            }`}
           >
-            <option value="">All Agents</option>
-            {agents?.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm px-3 py-1.5 text-[12px] text-foreground hover:border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-ring/60 transition-colors"
-          >
-            <option value="">All Priorities</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
+            <Filter className="h-3 w-3" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-0.5 px-1 rounded-full bg-primary/20 text-[9px] font-bold tabular-nums">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+          {activeFilterCount > 0 && (
+            <button
+              onClick={() => { setFilterAgent(""); setFilterPriority(""); }}
+              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Clear
+            </button>
+          )}
         </div>
+
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="flex gap-2 flex-wrap pb-1">
+                <select
+                  value={filterAgent}
+                  onChange={(e) => setFilterAgent(e.target.value)}
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm px-3 py-1.5 text-[12px] text-foreground hover:border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-ring/60 transition-colors"
+                >
+                  <option value="">All Agents</option>
+                  {agents?.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+                <select
+                  value={filterPriority}
+                  onChange={(e) => setFilterPriority(e.target.value)}
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm px-3 py-1.5 text-[12px] text-foreground hover:border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-ring/60 transition-colors"
+                >
+                  <option value="">All Priorities</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -257,25 +300,14 @@ export default function TasksPage() {
                             dragTaskId === task.id ? "opacity-40 scale-95" : ""
                           }`}
                         >
-                          <TaskCard task={task} agentName={agentMap[task.assigned_to || ""] || undefined} />
-                          {/* Intent toggle */}
-                          {task.assigned_to && task.status === "in_progress" && (
-                            <button
-                              onClick={() => setExpandedIntentId(expandedIntentId === task.id ? null : task.id)}
-                              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors mt-1 ml-1"
-                            >
-                              <Brain className="h-2.5 w-2.5" />
-                              Intent
-                              {expandedIntentId === task.id ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
-                            </button>
-                          )}
+                          <TaskCard
+                            task={task}
+                            agentName={agentMap[task.assigned_to || ""] || undefined}
+                            expandedIntentId={expandedIntentId}
+                            onToggleIntent={setExpandedIntentId}
+                            agentMap={agentMap}
+                          />
                         </div>
-                        {/* Intent Preview */}
-                        {expandedIntentId === task.id && (
-                          <div className="mt-1.5 animate-fade-in">
-                            <IntentPreview taskId={task.id} agentMap={agentMap} />
-                          </div>
-                        )}
                       </div>
                     ))
                   )}
@@ -285,13 +317,31 @@ export default function TasksPage() {
           </div>
         )}
 
-        {/* Assignment Feed */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Zap className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-medium">Assignment Log</h3>
-          </div>
-          <AssignmentFeed agentMap={agentMap} taskMap={taskMap} />
+        {/* Collapsible Assignment Log */}
+        <div className="mt-4">
+          <button
+            onClick={() => setShowLog(!showLog)}
+            className="flex items-center gap-2 text-[11px] text-muted-foreground hover:text-foreground transition-colors group"
+          >
+            <Zap className="h-3.5 w-3.5 text-primary/60 group-hover:text-primary transition-colors" />
+            <span className="font-medium text-xs">Assignment Log</span>
+            <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showLog ? "rotate-180" : ""}`} />
+          </button>
+          <AnimatePresence>
+            {showLog && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
+              >
+                <div className="pt-3">
+                  <AssignmentFeed agentMap={agentMap} taskMap={taskMap} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
