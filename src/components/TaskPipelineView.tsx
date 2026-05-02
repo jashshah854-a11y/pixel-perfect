@@ -127,7 +127,7 @@ export function TaskPipelineView() {
                     <p className="text-sm font-medium text-foreground leading-snug">
                       {task.title}
                     </p>
-                    <StatusBadge status={task.priority || "medium"} />
+                    <StatusBadge value={task.priority || "medium"} type="priority" />
                   </div>
                   {task.description && (
                     <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
