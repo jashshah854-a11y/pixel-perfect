@@ -133,11 +133,11 @@ serve(async (req) => {
     const outputType = detectOutputType(task.title, task.description || "");
     const template = TEMPLATES[outputType] || TEMPLATES.utility;
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     let generatedCode = template.scaffold;
     let generationMethod = "template";
 
-    if (LOVABLE_API_KEY) {
+    if (GEMINI_API_KEY) {
       // Build rich context from all available sources
       const contextParts = [
         `# Task: "${task.title}"`,
@@ -159,10 +159,10 @@ serve(async (req) => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 25000);
 
-        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            Authorization: `Bearer ${GEMINI_API_KEY}`,
             "Content-Type": "application/json",
           },
           signal: controller.signal,
