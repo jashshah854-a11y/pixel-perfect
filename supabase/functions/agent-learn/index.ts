@@ -92,7 +92,7 @@ Return JSON array: [{type:"pattern"|"preference"|"correction", content:string, c
             },
             signal: controller.signal,
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash-lite",
+              model: "google/gemini-3.5-flash",
               messages: [
                 { role: "system", content: "Extract structured learnings. Return valid JSON arrays only. Be specific." },
                 { role: "user", content: prompt },
