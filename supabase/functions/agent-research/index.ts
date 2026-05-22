@@ -99,7 +99,7 @@ serve(async (req) => {
                     "Content-Type": "application/json",
                   },
                   body: JSON.stringify({
-                    model: "google/gemini-2.5-flash-lite",
+                    model: "google/gemini-3.5-flash",
                     messages: [
                       { role: "system", content: "Synthesize search results into actionable findings. Be specific and practical. Include concrete recommendations." },
                       { role: "user", content: `Topic: ${searchTopic}\n\nSearch results:\n${rawContent}\n\nProvide 3-5 specific, actionable findings with concrete recommendations.` },
@@ -144,7 +144,7 @@ serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash-lite",
+              model: "google/gemini-3.5-flash",
               messages: [
                 { role: "system", content: "You are a research assistant. Provide specific, actionable findings. Clearly state these are from your training data, not live search." },
                 { role: "user", content: `Research topic: "${searchTopic}" for a ${agent.role} agent in ${agent.department}. Provide 3 specific, actionable findings.` },
