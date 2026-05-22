@@ -18,7 +18,7 @@ export function TaskPipelineView() {
   const [openStage, setOpenStage] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterMode>("all");
 
-  const { data: tasks } = useQuery({
+  const { data: tasks, isFetching } = useQuery({
     queryKey: ["pipeline-tasks"],
     queryFn: async () => {
       const { data } = await supabase.from("tasks").select("*").order("created_at", { ascending: false }).limit(50);
