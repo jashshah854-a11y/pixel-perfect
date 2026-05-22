@@ -18,7 +18,7 @@ export function TaskPipelineView() {
   const [openStage, setOpenStage] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterMode>("all");
 
-  const { data: tasks } = useQuery({
+  const { data: tasks, isFetching } = useQuery({
     queryKey: ["pipeline-tasks"],
     queryFn: async () => {
       const { data } = await supabase.from("tasks").select("*").order("created_at", { ascending: false }).limit(50);
@@ -90,7 +90,27 @@ export function TaskPipelineView() {
           </div>
         </div>
 
-        {total === 0 ? (
+        {isFetching ? (
+          <div className="space-y-3 animate-pulse">
+            <div className="flex h-1.5 rounded-full overflow-hidden bg-white/[0.04]">
+              <div className="h-full w-1/4 bg-white/[0.06]" />
+              <div className="h-full w-1/4 bg-white/[0.06]" />
+              <div className="h-full w-1/4 bg-white/[0.06]" />
+              <div className="h-full w-1/4 bg-white/[0.06]" />
+            </div>
+            <div className="flex items-center gap-5">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-2 px-2 py-1">
+                  <div className="h-3.5 w-3.5 rounded-full bg-white/[0.06]" />
+                  <div className="flex items-baseline gap-1.5">
+                    <div className="h-5 w-5 rounded bg-white/[0.06]" />
+                    <div className="h-3 w-8 rounded bg-white/[0.06]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : total === 0 ? (
           <div className="py-6 flex flex-col items-center justify-center gap-3 text-center">
             <div className="h-10 w-10 rounded-full bg-white/[0.04] flex items-center justify-center">
               <Sparkles className="h-4 w-4 text-muted-foreground/50" />
@@ -123,7 +143,7 @@ export function TaskPipelineView() {
                     onClick={() => setOpenStage(s.label)}
                     className="flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-white/[0.06] cursor-pointer"
                   >
-                    <Icon className={`h-3.5 w-3.5 ${s.color} ${s.label === "Active" && s.count > 0 ? "animate-spin" : ""}`} />
+                    <Icon className={`h-3.5 w-3.5 ${s.color} ${s.label === "Active" && s.count > 1 ? "animate-spin" : ""}`} />
                     <div className="flex items-baseline gap-1.5">
                       <span className="stat-display text-lg font-semibold text-foreground tabular-nums">{s.count}</span>
                       <span className="text-[10px] text-muted-foreground">{s.label}</span>
