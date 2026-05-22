@@ -167,7 +167,7 @@ serve(async (req) => {
           },
           signal: controller.signal,
           body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
+            model: "google/gemini-3.5-flash",
             messages: [
               { role: "system", content: template.system },
               { role: "user", content: `Generate a COMPLETE, PRODUCTION-QUALITY implementation for this task. This output will be used directly — do not produce placeholder or stub code.\n\n${contextParts}` },
