@@ -12,8 +12,11 @@ const statusMap: Record<string, string> = {
   Blocked: "blocked",
 };
 
+type FilterMode = "all" | "assigned";
+
 export function TaskPipelineView() {
   const [openStage, setOpenStage] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterMode>("all");
 
   const { data: tasks } = useQuery({
     queryKey: ["pipeline-tasks"],
@@ -35,11 +38,15 @@ export function TaskPipelineView() {
   const agentMap = Object.fromEntries((agents || []).map(a => [a.id, a.name]));
   const allTasks = tasks || [];
 
-  const queued = allTasks.filter(t => t.status === "queued").length;
-  const active = allTasks.filter(t => t.status === "in_progress").length;
-  const done = allTasks.filter(t => t.status === "done").length;
-  const blocked = allTasks.filter(t => t.status === "blocked").length;
-  const total = allTasks.length;
+  const visibleTasks = filter === "assigned"
+    ? allTasks.filter(t => t.assigned_to)
+    : allTasks;
+
+  const queued = visibleTasks.filter(t => t.status === "queued").length;
+  const active = visibleTasks.filter(t => t.status === "in_progress").length;
+  const done = visibleTasks.filter(t => t.status === "done").length;
+  const blocked = visibleTasks.filter(t => t.status === "blocked").length;
+  const total = visibleTasks.length;
 
   const stages = [
     { label: "Queued", count: queued, icon: Clock, color: "text-amber-400", barColor: "bg-amber-400" },
@@ -49,7 +56,7 @@ export function TaskPipelineView() {
   ];
 
   const drawerTasks = openStage
-    ? allTasks.filter(t => t.status === statusMap[openStage])
+    ? visibleTasks.filter(t => t.status === statusMap[openStage])
     : [];
 
   const openStageData = stages.find(s => s.label === openStage);
@@ -61,9 +68,26 @@ export function TaskPipelineView() {
           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-muted-foreground">
             Task Pipeline
           </span>
-          <span className="text-[11px] text-mono tabular-nums text-muted-foreground/60">
-            {total} total
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center rounded-lg bg-white/[0.04] p-0.5">
+              {(["all", "assigned"] as FilterMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setFilter(mode)}
+                  className={`text-[10px] px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                    filter === mode
+                      ? "bg-white/[0.12] text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground/80"
+                  }`}
+                >
+                  {mode === "all" ? "All" : "Assigned"}
+                </button>
+              ))}
+            </div>
+            <span className="text-[11px] text-mono tabular-nums text-muted-foreground/60">
+              {total} total
+            </span>
+          </div>
         </div>
 
         {total === 0 ? (
