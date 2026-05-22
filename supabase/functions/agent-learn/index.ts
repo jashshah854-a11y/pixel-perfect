@@ -67,9 +67,9 @@ serve(async (req) => {
       tags: string[];
     }> = [];
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
-    if (LOVABLE_API_KEY && involvedAgents.length > 0) {
+    if (GEMINI_API_KEY && involvedAgents.length > 0) {
       // Parallel AI calls for all agents at once
       const aiPromises = involvedAgents.map(async (assignment) => {
         const agent = assignment.agent;
@@ -84,10 +84,10 @@ Return JSON array: [{type:"pattern"|"preference"|"correction", content:string, c
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 4000);
 
-          const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          const aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              Authorization: `Bearer ${GEMINI_API_KEY}`,
               "Content-Type": "application/json",
             },
             signal: controller.signal,
